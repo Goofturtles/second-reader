@@ -103,14 +103,49 @@
     return null;
   }
 
-  /** Teacher or student. It changes what the app calls things, not what it does. */
-  function setRole(email, role) {
+  /*
+   * Teacher or student. It decides which tools the app offers, so it has to be
+   * answerable before anyone signs in - most people who open this will never
+   * make a profile, and until now every one of them was silently a teacher with
+   * no way to say otherwise.
+   *
+   * The signed-in profile is the source of truth when there is one; ROLE_KEY
+   * carries it the rest of the time, and a profile writes through to it so
+   * signing out does not quietly change what you are looking at.
+   */
+  const ROLE_KEY = "sr:role";
+  const clean = (r) => (r === "student" ? "student" : "teacher");
+
+  function role() {
+    const s = current();
+    if (s && s.role) return clean(s.role);
+    try { return clean(localStorage.getItem(ROLE_KEY)); } catch (e) { return "teacher"; }
+  }
+
+  function setLocalRole(next) {
+    const value = clean(next);
+    try { localStorage.setItem(ROLE_KEY, value); } catch (e) { /* private mode */ }
+    const s = current();
+    if (s) {
+      /* Keep the profile and the loose key in step, so the answer does not
+         change underneath somebody when they sign in or out. */
+      s.role = value;
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch (e) { /* ignore */ }
+      const all = loadProfiles();
+      const rec = all[normEmail(s.email)];
+      if (rec) { rec.role = value; saveProfiles(all); }
+    }
+    return value;
+  }
+
+  function setRole(email, next) {
     const all = loadProfiles();
     const rec = all[normEmail(email)];
     if (!rec) return false;
-    rec.role = role === "student" ? "student" : "teacher";
+    rec.role = clean(next);
     saveProfiles(all);
     commit(rec);
+    try { localStorage.setItem(ROLE_KEY, rec.role); } catch (e) { /* ignore */ }
     return true;
   }
 
@@ -148,5 +183,6 @@
 
   global.Session = {
     lookup, create, unlock, fromProvider, current, signOut, firstName, shelfKey, secure, rename, remove, setRole,
+    role, setLocalRole,
   };
 })(window);

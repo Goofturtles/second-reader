@@ -36,8 +36,56 @@
     },
   };
   function roleCopy() {
-    const s = Session.current();
-    return ROLE[(s && s.role) === "student" ? "student" : "teacher"];
+    return ROLE[Session.role()];
+  }
+
+  /*
+   * WHICH TOOLS EACH PERSON GETS.
+   *
+   * The six tabs used to be a hardcoded array in paintTabs and static markup in
+   * index.html, so there was nowhere to record who a tool was for. This is that
+   * place. `roles` is the whole point of the table; everything else is what
+   * setTab and paintTabs already needed.
+   *
+   * A teacher works ACROSS a set - one rubric, thirty essays, and the job is
+   * triage and consistency. A student works DOWN one essay over time, and the
+   * job is knowing what to change next. That is why Class is not a student tool
+   * and why Drafts matters more to a student than to anybody.
+   */
+  const TOOLS = [
+    { id: "evidence", label: "Evidence", roles: ["teacher", "student"] },
+    { id: "feedback", label: "Feedback", roles: ["teacher", "student"] },
+    { id: "ask", label: "Ask", roles: ["teacher", "student"] },
+    { id: "signals", label: "Signals", roles: ["teacher", "student"] },
+    { id: "class", label: "Class", roles: ["teacher"] },
+    { id: "drafts", label: "Drafts", roles: ["teacher", "student"] },
+  ];
+
+  function toolsFor(r) {
+    const who = r || Session.role();
+    return TOOLS.filter((t) => t.roles.indexOf(who) !== -1);
+  }
+
+  function toolAllowed(id) {
+    return toolsFor().some((t) => t.id === id);
+  }
+
+  /*
+   * Changing role changes the wording, the tool strip, and possibly the tab you
+   * are standing on - so everything that reads the role has to be repainted,
+   * and setTab has to be given a chance to fall back if the current tool has
+   * just been taken away.
+   */
+  function setRole(next) {
+    const value = Session.setLocalRole(next);
+    paintRoleCopy();
+    paintRail();
+    setTab(state.tab);
+    render();
+    toast(value === "student"
+      ? "Student tools. Class is a teacher's view, so it is put away."
+      : "Teacher tools. Class is back.");
+    return value;
   }
 
   /*
@@ -659,13 +707,16 @@
    * check it, reword a sentence, or soften a line before it went out. It is a
    * draft you can edit, and it is on screen next to the evidence it came from.
    */
+  /* A student only ever has one sheet: the one addressed to them. The other is
+     a marking summary with the flag reasons and a signals dump in it. */
   let fbWhich = "student";
+  function fbLocked() { return Session.role() === "student"; }
   let fbView = "read";
   const fbCaret = { student: null, teacher: null };
   const fbEdit = { student: null, teacher: null };
 
   function fbDraft() {
-    return fbWhich === "student" ? studentText() : teacherText();
+    return fbWhich === "student" || fbLocked() ? studentText() : teacherText();
   }
 
   function fbSource() {
@@ -676,6 +727,13 @@
     const host = document.getElementById("fb-body");
     const foot = document.getElementById("fb-foot");
     if (!host) return;
+
+    /* A student has one sheet, so the control that picks between two goes -
+       and its labels were written from the marker's chair anyway: "For the
+       student" is a strange thing to read about yourself. */
+    const swap = document.querySelector(".fb-switch");
+    if (swap) swap.hidden = fbLocked();
+    if (fbLocked()) fbWhich = "student";
 
     document.querySelectorAll("[data-fb]").forEach((b) =>
       b.setAttribute("aria-pressed", b.getAttribute("data-fb") === fbWhich ? "true" : "false")
@@ -885,8 +943,11 @@
   /* ------------------------------- side tabs -------------------------------- */
 
   function setTab(name) {
-    state.tab = name;
+    /* Falling back rather than refusing: a role switch while Class is open has
+       to land somewhere, and Evidence is the tool both roles always have. */
+    state.tab = toolAllowed(name) ? name : "evidence";
     paintTabs();
+    name = state.tab;
     /* A hidden panel measures as nothing, so the sheet was sized to its
        minimum while it was still behind another tab and never corrected. */
     if (name === "feedback") paintFeedback();
@@ -900,12 +961,16 @@
 
   function paintTabs() {
     document.querySelectorAll(".side-tabs [data-tab]").forEach((b) => {
-      b.setAttribute("aria-selected", b.getAttribute("data-tab") === state.tab ? "true" : "false");
-      b.tabIndex = b.getAttribute("data-tab") === state.tab ? 0 : -1;
+      const id = b.getAttribute("data-tab");
+      /* A tool this role does not get is removed from the strip entirely, not
+         disabled: a greyed-out tab is a promise of something you cannot have. */
+      b.hidden = !toolAllowed(id);
+      b.setAttribute("aria-selected", id === state.tab ? "true" : "false");
+      b.tabIndex = id === state.tab ? 0 : -1;
     });
-    ["evidence", "feedback", "ask", "signals", "class", "drafts"].forEach((name) => {
-      const p = document.getElementById("panel-" + name);
-      if (p) p.hidden = state.tab !== name;
+    TOOLS.forEach((t) => {
+      const p = document.getElementById("panel-" + t.id);
+      if (p) p.hidden = state.tab !== t.id;
     });
   }
 
@@ -2685,22 +2750,111 @@
   let sigView = "reading";
   let draftAgainst = null;
 
+  /*
+   * The things you can fix by changing one sentence, quoted where they sit.
+   *
+   * Everything here is already computed on every read - hedging, vagueSourcing
+   * and concession each keep their raw {phrase, at} hits alongside the score
+   * the engine uses, and nothing has ever rendered them. So this needs no model
+   * and no key, which is the point.
+   *
+   * Deliberately absent: any count, any total, any comparison against anything.
+   * A heading that said "6 hedges" would be a dial, and clearing a dial is a
+   * score going up. There is no number on this panel to move.
+   */
+  function fixBody() {
+    const s = state.result && state.result.signals;
+    if (!s) {
+      return '<div class="empty"><h3>Read it first.</h3>' +
+        "<p>Press Read it and this fills with the lines you can fix without " +
+        "rewriting anything.</p></div>";
+    }
+
+    const sents = CloseReader.splitSentences(state.work.text);
+    const at = (i) => sents.find((x) => i >= x.start && i < x.end);
+
+    /* One sentence can hold three hedges; it is still one thing to go and fix,
+       so the first hit wins and the rest of that sentence is skipped. */
+    const seen = new Set();
+    const rows = (hits) => (hits || [])
+      .map((h) => ({ h: h, s: at(h.at) }))
+      .filter((r) => r.s && !seen.has(r.s.start) && seen.add(r.s.start))
+      .slice(0, 6);
+
+    const block = (title, note, hits) => {
+      const list = rows(hits);
+      if (!list.length) return "";
+      return '<p class="cov-label" role="heading" aria-level="3">' + esc(title) + "</p>" +
+        '<p class="ins-note">' + esc(note) + "</p>" +
+        list.map((x) =>
+          '<button class="quote mid" data-jump="' + x.s.start + '">' + esc(x.s.text) +
+          '<span class="who">' + esc(x.h.phrase) + "</span></button>").join("");
+    };
+
+    /* An objection raised and then abandoned. Same test the engine uses to
+       decide whether a concession was answered, applied to the two sentences
+       after the one holding it. */
+    const ANSWERED = /\b(but|however|yet|still|even so|the problem|that said)\b/i;
+    const hanging = ((s.concession && s.concession.hits) || []).filter((h) => {
+      const host = at(h.at);
+      return host && !sents.slice(host.i + 1, host.i + 3).some((n) => ANSWERED.test(n.text));
+    });
+
+    const html =
+      block("Words doing the cushioning",
+        "Read each sentence without the word underneath it. If it still says what you " +
+        "meant, the word was doing nothing.",
+        s.hedging && s.hedging.hits) +
+      block("Standing in for a source",
+        "Each of these points at a study without naming one. Name it, or drop the claim.",
+        s.vagueSourcing && s.vagueSourcing.hits) +
+      block("An objection with no answer",
+        "You raise the other side here, and the next two sentences never come back to it.",
+        hanging);
+
+    return html || '<div class="empty"><h3>Nothing here is a one-line fix.</h3>' +
+      "<p>Whatever is left needs a paragraph rather than a word. Open Evidence.</p></div>";
+  }
+
   function paintSignals() {
     const host = document.getElementById("signals-body");
     if (!host) return;
     if (docText().length < 120) {
       host.innerHTML = '<div class="empty"><h3>Not enough here yet.</h3>' +
-        "<p>Put an essay in and this measures how it reads, and the patterns people " +
-        "associate with generated text \u2014 without ever telling you who wrote it.</p></div>";
+        "<p>" + (Session.role() === "student"
+          ? "Put your essay in and this measures how it reads \u2014 which sentences are " +
+            "long, where the going gets heavy, what to read aloud."
+          : "Put an essay in and this measures how it reads, and the patterns people " +
+            "associate with generated text \u2014 without ever telling you who wrote it.") +
+        "</p></div>";
       return;
     }
+    /*
+     * "How it was written" measures a piece of writing for the patterns people
+     * associate with generated text. Read the header of js/signals.js: that
+     * half exists for a teacher deciding whether to have a conversation, and
+     * it is explicitly not a detector. Handing it to the person being measured
+     * is a different act entirely, so a student does not get it - and does not
+     * get a disabled button advertising it either.
+     *
+     * The readability half is another matter: which of your sentences are hard
+     * to read is exactly what a writer wants.
+     */
+    const SUB = Session.role() === "student"
+      ? [["reading", "How it reads"], ["fix", "Fix in one line"]]
+      : [["reading", "How it reads"], ["authorship", "How it was written"]];
+    /* sigView is module-level and survives a role change, so a teacher who was
+       looking at authorship and switches to student would otherwise keep it. */
+    if (!SUB.some((t) => t[0] === sigView)) sigView = "reading";
+
     host.innerHTML =
-      '<div class="ins-tabs">' +
-        [["reading", "How it reads"], ["authorship", "How it was written"]]
-          .map((t) => '<button data-ins="' + t[0] + '" aria-pressed="' + (t[0] === sigView) + '">' + t[1] + "</button>")
-          .join("") +
-      "</div>" +
-      (sigView === "reading" ? readingBody() : authorBody());
+      (SUB.length > 1
+        ? '<div class="ins-tabs">' +
+            SUB.map((t) => '<button data-ins="' + t[0] + '" aria-pressed="' + (t[0] === sigView) + '">' + t[1] + "</button>")
+              .join("") +
+          "</div>"
+        : "") +
+      (sigView === "reading" ? readingBody() : sigView === "fix" ? fixBody() : authorBody());
 
     host.querySelectorAll("[data-ins]").forEach((b) =>
       b.addEventListener("click", () => {
@@ -2710,6 +2864,11 @@
         const now = host.querySelector('[data-ins="' + sigView + '"]');
         if (now) now.focus();
       })
+    );
+    /* A quote you cannot get to is a screenshot. Every quoted sentence in this
+       panel carries the offset it starts at, so it lands you on it. */
+    host.querySelectorAll("[data-jump]").forEach((b) =>
+      b.addEventListener("click", () => jumpTo(Number(b.getAttribute("data-jump"))))
     );
   }
 
@@ -2776,8 +2935,117 @@
    * The same checklist, across everything on the shelf. One essay tells you
    * about one student; twenty tell you what to teach on Monday.
    */
+  let clsView = "set", colCrit = null;
+
+  /*
+   * One item off the checklist, and the line every piece on the shelf gave you
+   * for it. This is how a set actually gets marked, and until now the app made
+   * it impossible: everything was organised by paper.
+   *
+   * Shelf order is kept on purpose - see columnBody.
+   */
+  async function columnBody(view) {
+    const crits = liveCriteria();
+    if (!crits.length) {
+      view.innerHTML = '<div class="empty"><h3>Write the checklist first.</h3>' +
+        "<p>One line per thing you are looking for, then this reads it down the shelf.</p></div>";
+      return;
+    }
+
+    const crit = crits.find((c) => c.name === colCrit);
+    if (!crit) {
+      view.innerHTML =
+        '<p class="ins-note">Pick one item. This reads it down every piece you have saved, ' +
+        "so you are answering the same question thirty times instead of thirty different ones.</p>" +
+        '<div class="gc-list">' + crits.map((c) =>
+          '<button data-col="' + esc(c.name) + '"><b>' + esc(c.name) + "</b>" +
+          "<span>read it down the shelf</span></button>").join("") + "</div>";
+      view.querySelectorAll("[data-col]").forEach((b) =>
+        b.addEventListener("click", () => { colCrit = b.getAttribute("data-col"); columnBody(view); }));
+      return;
+    }
+
+    const set = Shelf.list()
+      .filter((e) => e.rubricName === state.rubric.name && (e.text || "").trim().length > 80)
+      .slice(0, 40);
+
+    if (!set.length) {
+      view.innerHTML = '<div class="empty"><h3>Nothing on the shelf yet.</h3>' +
+        "<p>Read a second piece against this checklist and this fills with their lines.</p></div>";
+      return;
+    }
+
+    view.innerHTML = '<p class="ins-note">Reading ' + set.length +
+      (set.length === 1 ? " piece" : " pieces") + " for \u201c" + esc(colCrit) + "\u201d\u2026</p>";
+
+    /* ONE criterion in the rubric, so each read costs a fraction of a full one.
+       Yielding between them keeps the caret responsive if somebody is typing. */
+    const one = { id: state.rubric.id, name: state.rubric.name, context: state.rubric.context,
+                  level: state.rubric.level || "", criteria: [crit] };
+    const rows = [];
+    for (const e of set) {
+      await new Promise((r) => setTimeout(r, 0));
+      let c = null;
+      try {
+        const r = CloseReader.read(e.text, one);
+        c = r.ok && r.criteria[0];
+      } catch (err) { c = null; }
+      rows.push({
+        id: e.id,
+        title: e.title || "Untitled",
+        quote: c && c.evidence && c.evidence[0] ? c.evidence[0].text : null,
+      });
+    }
+
+    const withLine = rows.filter((r) => r.quote);
+
+    view.innerHTML =
+      '<div class="drafts-top"><span>\u201c<b>' + esc(colCrit) + "</b>\u201d, down the shelf</span>" +
+        '<button class="link-quiet" data-col-back>Change</button></div>' +
+      /* Saying it out loud, because the absence of a sort is the whole design. */
+      '<p class="ins-note">Shelf order, newest first. Nothing here is ranked.</p>' +
+      rows.map((r) =>
+        r.quote
+          ? '<button class="quote" data-open="' + esc(r.id) + '">' + esc(r.quote) +
+            '<span class="who">' + esc(r.title) + "</span></button>"
+          : '<button class="quote none" data-open="' + esc(r.id) + '">' +
+            "<em>No line to point at for this one.</em>" +
+            '<span class="who">' + esc(r.title) + "</span></button>"
+      ).join("") +
+      /* Both explanations, never just the one that blames the writing. */
+      (!withLine.length
+        ? '<p class="ins-note">Not one piece gave a line for this. Either the class cannot ' +
+          "do it yet, or the wording is asking for something that cannot be pointed at.</p>"
+        : "");
+
+    const back = view.querySelector("[data-col-back]");
+    if (back) back.addEventListener("click", () => { colCrit = null; columnBody(view); });
+    view.querySelectorAll("[data-open]").forEach((b) =>
+      b.addEventListener("click", () => openEntry(b.getAttribute("data-open"))));
+  }
+
   function paintClass() {
     const host = document.getElementById("class-body");
+    if (!host) return;
+
+    host.innerHTML = '<div class="ins-tabs">' +
+      [["set", "The set"], ["column", "The column"]].map((t) =>
+        '<button data-cls="' + t[0] + '" aria-pressed="' + (t[0] === clsView) + '">' + t[1] + "</button>"
+      ).join("") + '</div><div id="class-view"></div>';
+    host.querySelectorAll("[data-cls]").forEach((b) =>
+      b.addEventListener("click", () => {
+        clsView = b.getAttribute("data-cls");
+        paintClass();
+        const now = host.querySelector('[data-cls="' + clsView + '"]');
+        if (now) now.focus();
+      }));
+
+    const view = document.getElementById("class-view");
+    if (clsView === "column") return columnBody(view);
+    return setBody(view);
+  }
+
+  function setBody(host) {
     if (!host) return;
     const all = Shelf.list().filter((e) => e.bands && Object.keys(e.bands).length);
     if (all.length < 2) {
@@ -2947,9 +3215,13 @@
       { g: "View", icon: "i-highlight", label: "Marked", dim: has ? "one item at a time" : "read it first", run: () => setMode("read"), off: !has },
       { g: "View", icon: "i-layers", label: "All", dim: has ? "every item at once, one colour each" : "read it first", run: () => setMode("all"), off: !has },
       { g: "View", icon: "i-file", label: "Feedback", dim: "the sheet that goes back", run: () => setTab("feedback") },
-      { g: "Look closer", icon: "i-search", label: "Signals", dim: "how it reads, and how it was written", run: () => setTab("signals") },
-      { g: "Look closer", icon: "i-layers", label: "Class", dim: "what the whole set missed", run: () => setTab("class") },
-      { g: "Look closer", icon: "i-copy", label: "Drafts", dim: "against another draft", run: () => setTab("drafts") },
+      { g: "Look closer", icon: "i-search", label: "Signals", dim: "how it reads, and how it was written", tool: "signals", run: () => setTab("signals") },
+      { g: "Look closer", icon: "i-layers", label: "Class", dim: "what the whole set missed", tool: "class", run: () => setTab("class") },
+      { g: "Look closer", icon: "i-copy", label: "Drafts", dim: "against another draft", tool: "drafts", run: () => setTab("drafts") },
+      { g: "Look closer", icon: "i-panel",
+        label: Session.role() === "student" ? "Switch to teacher" : "Switch to student",
+        dim: "changes which tools you get",
+        run: () => setRole(Session.role() === "student" ? "teacher" : "student") },
       { g: "View", icon: "i-panel", label: "Show or hide the checklist", run: toggleRail },
       { g: "View", icon: "i-moon", label: "Switch theme", run: () => { const b = document.querySelector("[data-theme-toggle]"); if (b) b.click(); } }
     );
@@ -2989,7 +3261,7 @@
       { g: "Settings", icon: "i-cpu", label: "Second reader settings", run: openSettings },
       { g: "Settings", icon: "i-lock", label: Session.current() ? "Account" : "Sign in", run: () => { if (global.AccountPanel) AccountPanel.open(); } }
     );
-    return rows;
+    return palTools(rows);
   }
 
   /* Occurrences of the query in the essay itself, shown with enough either side
@@ -3253,11 +3525,18 @@
     strip.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       e.preventDefault();
-      const tabs = Array.prototype.slice.call(strip.querySelectorAll("[data-tab]"));
+      /* :not([hidden]) is load-bearing. paintTabs hides the tabs this role does
+         not get, and walking them anyway meant a student pressing Right from
+         Signals landed on the hidden Class tab, got bounced to Evidence by
+         setTab's fallback, and lost focus entirely. */
+      const tabs = Array.prototype.slice.call(strip.querySelectorAll("[data-tab]:not([hidden])"));
+      if (!tabs.length) return;
       const i = tabs.findIndex((t) => t.getAttribute("data-tab") === state.tab);
       const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
       setTab(next.getAttribute("data-tab"));
-      next.focus();
+      /* Focus what setTab actually landed on, which is not always `next`. */
+      const landed = strip.querySelector('[data-tab="' + state.tab + '"]');
+      (landed || next).focus();
     });
   }
 
@@ -3271,20 +3550,33 @@
    * to read. Account and the reader settings were also two doors into the same
    * five-tab panel, so they are one row now.
    */
+  /* palCommands rows carry a `tool` field for exactly this. Without the filter
+     a student is still offered "Class - what the whole set missed", and with
+     setTab's new fallback it no longer errors: it silently does nothing, which
+     is the worse of the two failures. */
+  function palTools(rows) {
+    return rows.filter((r) => !r.tool || toolAllowed(r.tool));
+  }
+
   function moreItems() {
+    const student = Session.role() === "student";
     return [
+      /* The one control that decides which half of the app you get. It used to
+         live only in the Account dialog, behind making a profile with a PIN. */
+      { g: "You are", label: student ? "A student" : "A teacher", key: "role", icon: "i-panel",
+        hint: student ? "switch to teacher" : "switch to student" },
       { g: "This essay", label: "Saved essays", key: "shelf", icon: "i-file" },
       { g: "This essay", label: "Signals", key: "signals", icon: "i-search",
         hint: "how it reads, how it was written" },
       { g: "This essay", label: "Drafts", key: "drafts", icon: "i-copy",
-        hint: "against another draft" },
+        hint: student ? "against your last draft" : "against another draft" },
       { g: "Your set", label: "Class", key: "class", icon: "i-layers",
         hint: "what the whole set missed" },
       { g: "", label: "Open a .txt file", key: "file", icon: "i-file" },
       { g: "", label: "Start a blank page", key: "clear", icon: "i-trash" },
       { g: "", label: "Search and commands", key: "palette", icon: "i-search", kbd: MODKEY + "K" },
       { g: "", label: Session.current() ? "Settings and account" : "Sign in", key: "settings", icon: "i-cpu" },
-    ];
+    ].filter((m) => !TOOLS.some((t) => t.id === m.key) || toolAllowed(m.key));
   }
 
   function closeMore(keepFocus) {
@@ -3332,6 +3624,7 @@
       closeMore(true);
       if (what === "shelf") { showRail(); return openShelf(document.getElementById("btn-shelf")); }
       if (what === "palette") return openPalette();
+      if (what === "role") return setRole(Session.role() === "student" ? "teacher" : "student");
       if (what === "signals") return setTab("signals");
       if (what === "class") return setTab("class");
       if (what === "drafts") return setTab("drafts");

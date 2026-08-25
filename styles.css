@@ -4191,3 +4191,8 @@ mark.ev.flag { background: var(--hl-here-act); box-shadow: none; }
   display: block; margin-top: 6px;
   font-size: 12px; line-height: 1.55; color: var(--ink-3);
 }
+
+/* "The column" prints a row for every piece including the ones with no line to
+   point at, because a gap in the set is the thing a teacher most needs to see. */
+.quote.none { border-left-color: var(--none); }
+.quote.none em { color: var(--ink-3); font-style: normal; }
