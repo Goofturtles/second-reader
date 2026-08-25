@@ -1,0 +1,4193 @@
+/* ===========================================================================
+   Second Reader — one stylesheet, no build step.
+
+   The look is a marker's desk: warm paper, dark ink, and one oxblood accent
+   that only ever means "the tool is talking". Evidence in the text is marked
+   with the three status colours and nothing else, so the reader never has to
+   ask what a colour means.
+
+   Type: Newsreader (serif) carries headings and, more importantly, the student
+   work itself — a document should read like a document. Inter carries the UI.
+   =========================================================================== */
+
+/* Open Runde (SIL OFL, self-hosted) — the rounded sans acctual.com uses.
+   Self-hosted rather than @import'd: an @import serialises the font request
+   behind this stylesheet's own parse, costing a round trip on first paint. */
+@font-face { font-family: "Open Runde"; src: url("fonts/OpenRunde-Regular.woff2") format("woff2");  font-weight: 400; font-display: swap; }
+@font-face { font-family: "Open Runde"; src: url("fonts/OpenRunde-Medium.woff2") format("woff2");   font-weight: 500; font-display: swap; }
+@font-face { font-family: "Open Runde"; src: url("fonts/OpenRunde-Semibold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Open Runde"; src: url("fonts/OpenRunde-Bold.woff2") format("woff2");     font-weight: 700; font-display: swap; }
+
+/* --------------------------------- tokens --------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  /* Light mode is built the way acctual and folio build theirs: a near-white
+     ground, PURE WHITE cards lifted off it by a hairline and a shadow you can
+     barely see, and near-black ink. The warmth is dialled right back — it now
+     lives in the oxblood accent and the rose-gold props, not in the paper. */
+  --bg: #f6f5f3;
+  --panel: #ffffff;
+  --panel-2: #f1efec;
+  --line: rgba(20, 18, 16, 0.08);
+  --line-strong: rgba(20, 18, 16, 0.16);
+
+  --ink: #171614;
+  --ink-2: #56524c;
+  --ink-3: #6c6760;
+
+  --accent: #8c2f39;
+  --accent-text: #7d2a33;
+  --accent-soft: #faecea;
+
+  --cta-bg: #171614;
+  --cta-ink: #ffffff;
+
+  --faq-panel: #5d1d24;
+  --faq-ink: #fdf6ee;
+  --faq-ink-2: #e8cbc7;
+  --faq-line: rgba(255, 255, 255, 0.22);
+
+  --ok: #1f6b45;
+  --mid: #8a5a00;
+  --none: #6b6259;
+  --flag: #3f4bb0;
+
+  --hl-ok: rgba(31, 107, 69, 0.15);
+  --hl-mid: rgba(138, 90, 0, 0.17);
+  --hl-none: rgba(107, 98, 89, 0.12);
+  --hl-flag: rgba(63, 75, 176, 0.14);
+
+  --shadow-card: 0 1px 2px rgba(20, 18, 16, 0.05), 0 1px 1px rgba(20, 18, 16, 0.03);
+  --shadow-pop: 0 24px 60px rgba(30, 26, 22, 0.11);
+  --overlay: rgba(20, 18, 16, 0.42);
+
+  --prop-shadow: drop-shadow(0 16px 24px rgba(40, 32, 26, 0.16));
+  --prop-opacity: 1;
+
+  --font-ui: "Open Runde", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+
+  --shell: 1080px;
+
+  /* liquid glass */
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --glass-top: rgba(255, 255, 255, 0.9);
+  --glass-bottom: rgba(20, 18, 16, 0.05);
+  --glass-sheen: rgba(255, 255, 255, 0.5);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* A real elevation ladder. The old values sat within 4% of each other on a
+     brown cast, so every surface looked like the same muddy sheet. */
+  --bg: #121215;
+  --panel: #1a1a1f;
+  --panel-2: #232329;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.17);
+
+  /* Never #fff. Pure white on a dark ground haloes and reads as heavier than
+     it is, which is why light-on-dark text always looks a weight too bold. */
+  --ink: #e9e9ee;
+  --ink-2: #a6a6b0;
+  --ink-3: #8d8d98;
+
+  /* Desaturated about 20%: on a dark ground a saturated colour vibrates
+     against the surface and the edges shimmer. */
+  --accent: #d68d94;
+  --accent-text: #e2a5ab;
+  --accent-soft: rgba(214, 141, 148, 0.15);
+
+  --cta-bg: #e9e9ee;
+  --cta-ink: #121215;
+
+  --faq-panel: var(--panel);
+  --faq-ink: var(--ink);
+  --faq-ink-2: var(--ink-2);
+  --faq-line: var(--line);
+
+  --ok: #63b98c;
+  --mid: #d3a457;
+  --none: #91919c;
+  --flag: #9aa1e0;
+
+  --hl-ok: rgba(99, 185, 140, 0.18);
+  --hl-mid: rgba(211, 164, 87, 0.18);
+  --hl-none: rgba(145, 145, 156, 0.13);
+  --hl-flag: rgba(154, 161, 224, 0.18);
+
+  /* Depth on dark comes from the surface getting lighter and from a hairline
+     catching the light, not from a shadow nobody can see against black. */
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-pop: 0 24px 60px rgba(0, 0, 0, 0.66), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --overlay: rgba(8, 8, 10, 0.72);
+
+  --prop-shadow: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.6));
+  --prop-opacity: 0.72;
+
+  --glass-bg: rgba(38, 38, 46, 0.6);
+  --glass-edge: rgba(255, 255, 255, 0.11);
+  --glass-top: rgba(255, 255, 255, 0.15);
+  --glass-bottom: rgba(0, 0, 0, 0.34);
+  --glass-sheen: rgba(255, 255, 255, 0.07);
+}
+
+/* ---------------------------------- base ---------------------------------- */
+
+* { box-sizing: border-box; }
+
+/* [hidden] is only `display:none` at UA precedence, so ANY author display rule
+   beats it — which left the nav "Log in" button and an empty greeting pill
+   painted after sign-in, and the login form's "use a different email" visible
+   at the email stage. */
+[hidden] { display: none !important; }
+
+html { background: var(--bg); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: -0.032em;
+  line-height: 1.14;
+  margin: 0;
+}
+h3, h4 { letter-spacing: -0.02em; }
+
+p { margin: 0; }
+img { max-width: 100%; display: block; }
+button { font-family: inherit; color: inherit; }
+a { color: inherit; }
+
+.tnum { font-variant-numeric: tabular-nums; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection { background: var(--accent-soft); color: var(--ink); }
+
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* -------------------------------- utilities ------------------------------- */
+
+.shell { max-width: var(--shell); margin: 0 auto; padding-inline: 20px; }
+.shell-wide { max-width: 1240px; margin: 0 auto; padding-inline: 20px; }
+
+.kicker {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-family: var(--font-ui);
+}
+
+.lede { color: var(--ink-2); font-size: 15.5px; line-height: 1.72; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--cta-bg);
+  color: var(--cta-ink);
+  transition: opacity 0.2s ease, transform 0.12s ease;
+  line-height: 1.3;
+  text-decoration: none; /* .btn is used on <a> too, which underlines by default */
+}
+.btn:hover { opacity: 0.88; }
+.btn:active { transform: scale(0.985); }
+.btn-lg { padding: 15px 30px; font-size: 15px; }
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--line-strong);
+}
+.btn-ghost:hover { color: var(--ink); border-color: var(--ink-3); opacity: 1; }
+.btn-quiet {
+  background: transparent; color: var(--ink-2); padding: 8px 14px; font-weight: 500;
+}
+.btn-quiet:hover { background: var(--panel-2); color: var(--ink); opacity: 1; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.lift { transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease; }
+.lift:hover { transform: translateY(-3px); border-color: var(--line-strong); box-shadow: var(--shadow-pop); }
+
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.75s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.75s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.reveal.in { opacity: 1; transform: none; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 13px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; line-height: 1.5;
+  background: var(--accent-soft); color: var(--accent-text);
+}
+
+/* status chips -------------------------------------------------------------*/
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; line-height: 1.5;
+  border: 1px solid currentColor;
+}
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.t-ok { color: var(--ok); }
+.t-mid { color: var(--mid); }
+.t-none { color: var(--none); }
+.t-flag { color: var(--flag); }
+
+/* ----------------------------------- nav ---------------------------------- */
+
+.nav {
+  position: sticky; top: 12px; z-index: 60;
+  padding-inline: 16px;
+  animation: navIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes navIn { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+
+/* Liquid glass: a real refraction stack, not a tinted panel.
+   1. saturate + blur on what is behind it, so colour bleeds through
+   2. a soft vertical wash for the body of the glass
+   3. an inset hairline at the top edge — the specular highlight where light
+      catches the lip — and a darker one at the bottom for thickness
+   4. a wide, low shadow so it reads as floating above the page, not printed on it */
+.nav-inner {
+  position: relative;
+  /* hugs its contents instead of stretching to a fixed width with a void in
+     the middle — there was more empty pill than nav */
+  width: fit-content; max-width: 100%; margin: 0 auto;
+  display: flex; align-items: center; gap: 26px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-bg);
+  backdrop-filter: blur(22px) saturate(190%);
+  -webkit-backdrop-filter: blur(22px) saturate(190%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-top),
+    inset 0 -1px 0 var(--glass-bottom),
+    0 10px 30px -6px rgba(40, 32, 26, 0.16),
+    0 2px 8px -2px rgba(40, 32, 26, 0.10);
+}
+/* the sheen: a narrow bright band across the upper third of the pill */
+.nav-inner::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, var(--glass-sheen) 0%, transparent 46%);
+}
+.nav-inner > * { position: relative; }
+.nav-left { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.nav-links { display: flex; gap: 2px; }
+.nav-links a {
+  padding: 7px 12px; border-radius: 999px;
+  font-size: 13.5px; font-weight: 500; color: var(--ink-2);
+  text-decoration: none; transition: background 0.2s ease, color 0.2s ease;
+}
+.nav-links a:hover { background: var(--panel-2); color: var(--ink); }
+.nav-right { display: flex; align-items: center; gap: 4px; }
+
+.brand {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font-size: 15.5px; font-weight: 600; letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+/* Folio Knot: compact AI geometry with a quiet open-book counter. */
+.mark { width: 26px; height: 26px; flex: none; display: block; color: var(--ink); }
+.mark-lg { width: 44px; height: 44px; }
+
+.icon-btn {
+  width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 999px; background: transparent; color: var(--ink-2);
+  cursor: pointer; transition: background 0.2s ease, color 0.2s ease;
+}
+.icon-btn:hover { background: var(--panel-2); color: var(--ink); }
+.icon-btn svg { width: 15px; height: 15px; }
+
+/* ---------------------------------- hero ---------------------------------- */
+
+.hero {
+  position: relative;
+  margin-top: -58px;
+  padding-top: 58px;
+  overflow: hidden;
+}
+
+/* Desk props, acctual-style: every object is a real transparent cutout from a
+   single overhead shoot, so the light direction and the camera angle agree.
+   No masks and no blend modes — they carry their own drop shadow and simply
+   sit on the page, some of them running off the edge. */
+.props { position: absolute; inset: 0; pointer-events: none; }
+.props img {
+  position: absolute;
+  /* height:auto is load-bearing. The width/height ATTRIBUTES on these images
+     are presentational hints, so setting only a CSS width leaves the attribute
+     height in force and every prop renders vertically stretched. */
+  height: auto;
+  filter: var(--prop-shadow);
+  opacity: var(--prop-opacity);
+}
+/* Sized the way acctual sizes its paperclip and binder clip: small enough to
+   read as a real object dropped on the page, sitting fully inside the frame
+   rather than cropped by it. Only the pen runs off an edge. */
+@media (max-width: 900px) { .props { display: none; } }
+
+.glow {
+  position: absolute; left: 50%; top: -280px;
+  width: 900px; height: 560px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--accent), transparent 70%);
+  opacity: 0.13; filter: blur(60px); pointer-events: none;
+  animation: glowDrift 17s ease-in-out infinite;
+}
+@keyframes glowDrift {
+  0%, 100% { transform: translate(-55%, 0) scale(1); }
+  50% { transform: translate(-45%, 8%) scale(1.1); }
+}
+
+.hero-inner { position: relative; text-align: center; padding: 52px 20px 76px; max-width: 1180px; margin: 0 auto; }
+
+.rise { animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+h1.hero-title {
+  margin: 22px auto 0;
+  max-width: 980px;
+  font-size: clamp(38px, 6vw, 70px);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.038em;
+}
+/* The mask the headline lines slide out from. Two separate hazards here:
+   pb/-mb keeps descenders (g, y, p) off the clip edge at rest, and the unclip
+   animation releases overflow once the intro has played — so if a line ever
+   does wrap (narrow window, longer copy, another language) the second line is
+   not silently guillotined. overflow is a discrete property, which is exactly
+   why a zero-duration keyframe at a delay is the right tool. */
+.line-mask {
+  display: block; overflow: hidden;
+  padding-bottom: 0.14em; margin-bottom: -0.14em;
+  animation: unclip 0s linear 1.3s forwards;
+}
+@keyframes unclip { to { overflow: visible; } }
+.line-mask > span { display: block; animation: lineUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes lineUp { from { transform: translateY(112%); } to { transform: none; } }
+
+/* The headline marks its own key word in exactly the ink the app uses on
+   student writing. The product's core gesture, before you have scrolled. */
+/* Two stacked background gradients — the wash and the rule under it — rather
+   than a z-index:-1 pseudo-element, which would sink behind the page's own
+   background and vanish. Backgrounds paint behind their own text for free. */
+.hero-title .marked {
+  white-space: nowrap;
+  padding: 0 0.06em;
+  background-image:
+    linear-gradient(var(--ok), var(--ok)),
+    linear-gradient(var(--hl-ok), var(--hl-ok));
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 0.94em, 0 0.1em;
+  background-size: 0% 0.055em, 0% 0.86em;
+  animation: swipe 0.6s cubic-bezier(0.65, 0, 0.35, 1) 1.05s forwards;
+}
+@keyframes swipe { to { background-size: 100% 0.055em, 100% 0.86em; } }
+
+
+.hero-sub { margin: 20px auto 0; max-width: 40ch; color: var(--ink-2); font-size: 16px; line-height: 1.68; }
+.hero-cta { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+
+.hero-checks {
+  margin-top: 30px; display: flex; flex-wrap: wrap; gap: 8px 26px; justify-content: center;
+  font-size: 13px; font-weight: 500; color: var(--accent-text);
+}
+.hero-checks span { display: inline-flex; align-items: center; gap: 7px; }
+.tick {
+  width: 16px; height: 16px; border-radius: 50%; background: var(--accent); flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.tick svg { width: 9px; height: 9px; color: #fff; }
+:root[data-theme="dark"] .tick svg { color: #2a0f12; }
+
+/* product preview ---------------------------------------------------------- */
+
+/* The product runs in its own band under the three steps: by the time anyone
+   reaches it they already know what they are looking at. */
+.preview-section { padding: 8px 0 76px; }
+.preview-cap { text-align: center; margin-bottom: 22px; }
+.preview-hold { position: relative; max-width: 1200px; margin: 0 auto; }
+.preview-wrap { position: relative; max-width: 900px; margin: 0 auto; }
+/* the frame shows the top of the app; fade the cut so it does not end on a
+   hard horizontal edge mid-sentence */
+.preview-card::after {
+  content: ""; position: absolute; inset-inline: 9px; bottom: 9px; height: 90px;
+  border-radius: 0 0 14px 14px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--panel));
+}
+.preview-card {
+  position: relative; z-index: 2;
+  border-radius: 22px; border: 1px solid var(--line); background: var(--panel);
+  padding: 9px; box-shadow: var(--shadow-pop);
+  animation: cardIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.46s both;
+  transform-style: preserve-3d;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(30px) scale(0.965); }
+  to { opacity: 1; transform: none; }
+}
+.preview-float { animation: floatY 6s ease-in-out infinite alternate; }
+@keyframes floatY { from { transform: translateY(0); } to { transform: translateY(-9px); } }
+
+.preview-stage { position: relative; border-radius: 14px; overflow: hidden; background: var(--bg); }
+.preview-stage iframe { display: block; width: 100%; height: 620px; border: 0; }
+
+.preview-play {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: transparent; cursor: pointer; padding: 0;
+}
+.preview-play span {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 12px 22px; border-radius: 999px;
+  background: var(--cta-bg); color: var(--cta-ink);
+  font-size: 13.5px; font-weight: 600; line-height: 1.4;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+  opacity: 0; transform: translateY(6px); transition: all 0.24s ease;
+}
+.preview-play:hover span, .preview-play:focus-visible span { opacity: 1; transform: none; }
+.preview-play::before {
+  content: ""; position: absolute; inset: 0; background: transparent; transition: background 0.24s ease;
+}
+.preview-play:hover::before { background: rgba(0, 0, 0, 0.08); }
+
+/* --------------------------------- marquee -------------------------------- */
+
+.strip { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 20px 0; }
+.strip-cap { text-align: center; margin-bottom: 12px; }
+.marquee-mask {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+          mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}
+.marquee { display: flex; width: max-content; animation: marqueeScroll 42s linear infinite; }
+.marquee span { display: inline-flex; align-items: center; white-space: nowrap; font-size: 14px; color: var(--ink-2); line-height: 1.6; }
+.marquee i { margin: 0 22px; color: var(--accent); font-style: normal; font-size: 11px; }
+@keyframes marqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* -------------------------------- sections -------------------------------- */
+
+section { position: relative; }
+.sec { padding: 86px 0; }
+.sec-head { max-width: 760px; }
+.sec-head h2 { margin-top: 12px; font-size: clamp(28px, 3.6vw, 40px); }
+.sec-head p { margin-top: 14px; }
+
+.grid-3 { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); margin-top: 40px; }
+.grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); margin-top: 40px; }
+
+.word-card { padding: 26px; }
+.word-card h3 { font-size: 25px; }
+.word-card p { margin-top: 11px; font-size: 14px; line-height: 1.7; color: var(--ink-2); }
+
+/* who it's for ------------------------------------------------------------- */
+
+.people { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); margin-top: 40px; }
+.person { overflow: hidden; padding: 0; }
+.person figure { margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: var(--panel-2); }
+.person img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.person:hover img { transform: scale(1.045); }
+.person-body { padding: 20px 22px 24px; }
+.person-body h3 { font-size: 19px; }
+.person-body p { margin-top: 9px; font-size: 13.5px; line-height: 1.7; color: var(--ink-2); }
+.person-body .pill { margin-bottom: 12px; }
+
+/* ---------------------------------- login --------------------------------- */
+
+.auth { min-height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.auth-beam { position: absolute; inset-inline: 0; top: 0; height: 1px; }
+.auth-beam::after {
+  content: ""; position: absolute; left: 50%; top: 0; width: 560px; height: 1px; transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.6;
+}
+.auth-top { position: relative; z-index: 2; padding: 18px 20px; }
+.auth-main { position: relative; z-index: 2; flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 20px 60px; }
+.auth-card { width: 100%; max-width: 372px; animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.auth-card > .mark-lg { margin: 0 auto; }
+.auth-card h1 { margin-top: 20px; text-align: center; font-size: 24px; }
+.auth-card .sub { margin-top: 8px; text-align: center; font-size: 13.5px; color: var(--ink-3); line-height: 1.65; }
+.auth-sso { margin-top: 26px; display: grid; gap: 10px; }
+.sso {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 11px 16px; border-radius: 13px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  font-size: 13.5px; font-weight: 500; line-height: 1.5;
+  transition: border-color 0.2s ease, transform 0.12s ease;
+}
+.sso:hover { border-color: var(--line-strong); }
+.sso:active { transform: scale(0.99); }
+.sso svg { width: 16px; height: 16px; flex: none; }
+.divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; }
+.divider hr { flex: 1; height: 1px; border: 0; background: var(--line); margin: 0; }
+.divider span { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6; }
+
+.field { display: block; }
+.field + .field { margin-top: 12px; }
+.field span { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 500; color: var(--ink-2); line-height: 1.55; }
+.input {
+  width: 100%; border-radius: 12px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel-2) 60%, transparent);
+  padding: 11px 14px; font-size: 14px; font-family: inherit; color: var(--ink);
+  line-height: 1.5; transition: border-color 0.2s ease;
+}
+.input::placeholder { color: var(--ink-3); }
+.input:focus { border-color: var(--line-strong); }
+.input.pin { letter-spacing: 0.42em; font-variant-numeric: tabular-nums; }
+textarea.input { min-height: 150px; resize: vertical; line-height: 1.65; }
+
+/* Kept in the accessibility tree even when empty so the live region can
+   actually announce; collapsed visually instead of hidden. */
+.notice.is-empty { display: none; }
+.notice { margin-top: 12px; padding: 10px 13px; border-radius: 11px; font-size: 12.5px; line-height: 1.6; background: var(--accent-soft); color: var(--accent-text); }
+.auth-note { margin-top: 10px; padding: 10px 13px; border-radius: 11px; font-size: 12.5px; line-height: 1.62; background: var(--panel-2); color: var(--ink-2); }
+.auth-card form .btn { margin-top: 14px; width: 100%; border-radius: 13px; padding: 12px; }
+.link-quiet {
+  display: block; width: 100%; margin-top: 14px; background: none; border: 0; cursor: pointer;
+  font-size: 12.5px; color: var(--ink-3); text-align: center; line-height: 1.6;
+  text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line-strong);
+}
+.link-quiet:hover { color: var(--ink); }
+.auth-fine { margin-top: 28px; text-align: center; font-size: 11.5px; line-height: 1.7; color: var(--ink-3); }
+.auth-foot { position: relative; z-index: 2; padding: 0 20px 22px; text-align: center; font-size: 10.5px; color: var(--ink-3); line-height: 1.7; }
+
+/* ----------------------------------- app ---------------------------------- */
+
+.app { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+
+.app-bar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px; border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+.app-bar .brand { margin-right: 4px; }
+.app-bar-spacer { margin-left: auto; }
+
+.select {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 500;
+  padding: 7px 30px 7px 11px; cursor: pointer; line-height: 1.55; max-width: 100%;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.select:hover { border-color: var(--line-strong); }
+
+.reader-chips { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.reader-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
+  font-size: 11.5px; font-weight: 500; color: var(--ink-2); background: var(--panel); line-height: 1.55;
+}
+.reader-chip .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--none); }
+.reader-chip.live .dot { background: var(--ok); }
+.reader-chip.live { color: var(--ink); }
+.reader-chip.off { color: var(--ink-3); }
+.reader-chip.busy { color: var(--ink); }
+.reader-chip.busy .dot { background: var(--accent); animation: blip 1.1s ease-in-out infinite; }
+@keyframes blip { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.reader-chip.busy { color: var(--ink); }
+.reader-chip.busy .dot { background: var(--accent); animation: blip 1.1s ease-in-out infinite; }
+@keyframes blip { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* Two panes, not three. The essay on the left, everything the reader found on
+   the right — the old third column meant reading across three places to answer
+   one question. */
+.app-body {
+  flex: 1; display: grid; gap: 1px; background: var(--line);
+  grid-template-columns: minmax(0, 1fr) 430px;
+  align-items: stretch;
+}
+.pane { background: var(--bg); min-width: 0; display: flex; flex-direction: column; }
+.pane-head {
+  padding: 15px 18px 12px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  background: var(--panel);
+}
+.pane-head h2 { font-family: var(--font-ui); font-size: 12px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6; }
+.pane-scroll { flex: 1; overflow-y: auto; padding: 22px 24px 40px; }
+
+/* the findings list */
+.findings { display: grid; gap: 10px; }
+.empty { font-size: 13.5px; color: var(--ink-3); line-height: 1.7; }
+
+.finding {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.finding.open { border-color: currentColor; box-shadow: var(--shadow-card); }
+.finding-top {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 15px 16px; background: none; border: 0; cursor: pointer; text-align: left;
+}
+.finding-name { flex: 1; font-size: 14.5px; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.finding-chev { width: 14px; height: 14px; color: var(--ink-3); flex: none; transition: transform 0.25s ease; }
+.finding.open .finding-chev { transform: rotate(180deg); }
+.finding-top:hover { background: var(--panel-2); }
+
+/* Fade only. The card clips to its own radius, so an animation that translates
+   the body pushes the last line past the clip edge while it plays. */
+.finding-body { padding: 2px 16px 18px; animation: fadeIn 0.24s ease both; }
+.finding-desc { font-size: 13px; line-height: 1.7; color: var(--ink-3); }
+.finding-label {
+  margin-top: 16px; font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6;
+}
+.finding-text { margin-top: 6px; font-size: 13.5px; line-height: 1.72; color: var(--ink-2); }
+.finding-none { margin-top: 14px; font-size: 13.5px; line-height: 1.7; color: var(--ink-3); }
+.finding-flag {
+  margin-top: 12px; padding: 11px 13px; border-radius: 11px;
+  background: var(--hl-flag); color: var(--ink-2);
+  font-size: 12.5px; line-height: 1.65;
+}
+.summary-band { padding: 2px 2px 18px; }
+.summary-band h3 { font-size: 19px; font-weight: 700; line-height: 1.35; }
+.summary-band p { margin-top: 6px; font-size: 13.5px; line-height: 1.65; color: var(--ink-2); }
+.bar { display: flex; height: 6px; border-radius: 999px; overflow: hidden; margin-top: 12px; background: var(--panel-2); }
+.bar i { display: block; height: 100%; }
+.bar i.ok { background: var(--ok); }
+.bar i.mid { background: var(--mid); }
+.bar i.none { background: var(--none); }
+
+/* centre: the work */
+.doc-head { padding: 26px 34px 0; }
+.doc-head h1 { font-size: clamp(24px, 2.6vw, 32px); line-height: 1.2; }
+.doc-head .meta { margin-top: 9px; font-size: 12.5px; color: var(--ink-3); line-height: 1.65; }
+.doc {
+  padding: 22px 34px 70px; max-width: 68ch;
+  font-family: var(--font-serif); font-size: 17.5px; line-height: 1.82; color: var(--ink);
+}
+.doc p + p { margin-top: 17px; }
+.doc-empty { padding: 60px 34px; color: var(--ink-3); }
+
+.editor-wrap { padding: 20px 24px 40px; display: grid; gap: 14px; }
+
+/* right rail: the criterion detail */
+.detail { display: grid; gap: 16px; }
+.detail-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.detail h3 { font-size: 21px; line-height: 1.25; }
+.detail .desc { font-size: 13px; line-height: 1.7; color: var(--ink-2); }
+.block { border-radius: 13px; border: 1px solid var(--line); background: var(--panel); padding: 14px 15px; }
+.block > h4 {
+  font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3); line-height: 1.6;
+}
+.block ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 9px; }
+.block-p { margin-top: 8px; font-size: 13px; line-height: 1.7; color: var(--ink-2); }
+.block li { font-size: 13px; line-height: 1.7; color: var(--ink-2); }
+
+.quote {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  border: 0; border-left: 3px solid var(--line-strong);
+  border-radius: 0; background: none;
+  padding: 3px 0 3px 13px; margin-top: 9px;
+  font-family: var(--font-serif); font-size: 14.5px; line-height: 1.68; color: var(--ink);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.quote:hover { border-left-color: var(--accent); }
+.quote.ok { border-left-color: var(--ok); }
+.quote.mid { border-left-color: var(--mid); }
+.quote.flag { border-left-color: var(--flag); }
+.quote .who { display: block; margin-top: 7px; font-family: var(--font-ui); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6; }
+
+.flag-note {
+  border-radius: 13px; padding: 14px 15px;
+  border: 1px solid color-mix(in srgb, var(--flag) 40%, transparent);
+  background: var(--hl-flag);
+}
+.flag-note h4 { font-family: var(--font-ui); font-size: 12px; font-weight: 700; color: var(--flag); line-height: 1.55; }
+.flag-note p { margin-top: 7px; font-size: 12.5px; line-height: 1.68; color: var(--ink-2); }
+
+.split-readers { display: grid; gap: 8px; margin-top: 11px; }
+.split-reader { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 11px; border-radius: 9px; background: var(--panel); border: 1px solid var(--line); }
+.split-reader span { font-size: 12px; color: var(--ink-2); line-height: 1.55; }
+
+.no-grade {
+  margin-top: 4px; padding: 13px 15px; border-radius: 13px;
+  border: 1px dashed var(--line-strong); background: transparent;
+}
+.no-grade p { font-size: 12.5px; line-height: 1.68; color: var(--ink-3); }
+.no-grade b { color: var(--ink-2); }
+
+.app-foot {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 11px 16px; border-top: 1px solid var(--line); background: var(--panel);
+}
+.app-foot .fine { font-size: 11.5px; color: var(--ink-3); margin-right: auto; line-height: 1.65; }
+
+/* modal -------------------------------------------------------------------- */
+
+.modal-back {
+  position: fixed; inset: 0; z-index: 90; background: var(--overlay);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fadeIn 0.2s ease both;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  width: 100%; max-width: 520px; max-height: 86vh; overflow-y: auto;
+  border-radius: 20px; border: 1px solid var(--line); background: var(--panel);
+  box-shadow: var(--shadow-pop); padding: 24px;
+  animation: rise 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.modal h2 { font-size: 22px; }
+.modal .sub { margin-top: 8px; font-size: 13px; line-height: 1.7; color: var(--ink-2); }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 95;
+  padding: 11px 20px; border-radius: 999px;
+  background: var(--cta-bg); color: var(--cta-ink);
+  font-size: 13px; font-weight: 500; line-height: 1.5;
+  box-shadow: var(--shadow-pop); animation: rise 0.25s ease both;
+}
+
+.spin { display: inline-block; width: 13px; height: 13px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ------------------------------- responsive ------------------------------- */
+
+@media (max-width: 1100px) {
+  .app-body { grid-template-columns: minmax(0, 1fr) 360px; }
+}
+@media (max-width: 980px) {
+  .grid-3, .people { grid-template-columns: 1fr 1fr; }
+  .stack-grid { grid-template-columns: 1fr 1fr; }
+  .feature-head { grid-template-columns: 1fr; gap: 16px; }
+  .faq-grid { grid-template-columns: 1fr; }
+  .foot-grid { grid-template-columns: 1fr 1fr; }
+  .demo-body { grid-template-columns: 1fr; }
+  .demo-text { border-right: 0; border-bottom: 1px solid var(--line); }
+  .numbers-grid { grid-template-columns: 1fr 1fr; }
+  /* Stacked panes scroll with the page. Nesting a scroll region inside a
+     scrolling document is the classic way to strand content on a phone. */
+  .app-body { grid-template-columns: 1fr; grid-auto-rows: min-content; }
+  .pane, .pane-scroll { max-height: none; overflow: visible; }
+}
+@media (max-width: 660px) {
+  .sec { padding: 62px 0; }
+  .grid-3, .grid-2, .people, .stack-grid { grid-template-columns: 1fr; }
+  .numbers-grid { grid-template-columns: 1fr 1fr; }
+  .foot-grid { grid-template-columns: 1fr; gap: 28px; }
+  .hero-inner { padding: 34px 16px 44px; }
+  .preview-stage iframe { height: 460px; }
+  .doc, .doc-head { padding-inline: 20px; }
+  .app-bar { gap: 8px; }
+}
+
+/* At phone widths the floating nav has room for the brand and one action.
+   "Log in" goes — it is reachable from the footer and from the reader, and a
+   three-line-tall CTA button is worse than one less link. */
+@media (max-width: 560px) {
+  .nav-right [data-signed-out], .nav-right [data-signed-in] { display: none; }
+  .nav-inner .btn, .nav-inner .brand { white-space: nowrap; }
+  #nav-cta { padding: 9px 15px; font-size: 12.5px; }
+  .brand { font-size: 14.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; }
+  .marquee, .glow, .preview-float { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.001s !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+}
+
+/* =========================================================================
+   Landing sections. Each block notes the site whose structure it takes.
+   ========================================================================= */
+
+/* --- tag pill (Retool: small, outlined, quiet) ---------------------------- */
+.tag {
+  display: inline-block;
+  padding: 5px 14px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  background: transparent; color: var(--accent-text);
+  font-size: 12px; font-weight: 600; line-height: 1.5;
+}
+.tag-solid { border: 0; background: var(--ink); color: var(--bg); }
+
+/* --- three steps: a numeral, two or three words, and a picture ----------- */
+.steps { display: grid; gap: 18px; grid-template-columns: repeat(3, 1fr); }
+.step { padding: 26px 24px 24px; border-radius: 20px; border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow-card); }
+.step-n {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; letter-spacing: 0.16em; color: var(--accent-text); line-height: 1.6;
+}
+.step h3 { margin-top: 8px; font-size: 24px; }
+.step-vis {
+  margin-top: 20px; padding: 18px; border-radius: 13px; background: var(--panel-2);
+  display: grid; gap: 9px; min-height: 108px; align-content: center;
+}
+.vis-row { font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+.vis-row b { font-weight: 600; }
+.vis-dim { color: var(--ink-3); }
+.vis-mark {
+  font-family: var(--font-serif); font-size: 13.5px;
+  background: var(--hl-ok); box-shadow: inset 0 -2px 0 var(--ok);
+  border-radius: 3px; padding: 2px 4px; align-self: start;
+}
+.step-vis .chip { font-style: normal; }
+.vis-line { display: block; height: 7px; border-radius: 999px; background: var(--line-strong); opacity: 0.45; }
+.vis-line.short { width: 52%; }
+.vis-line.mid { width: 74%; }
+
+/* --- the reframe (Ploy: two-column table of claim-over-explanation; the
+       column headers are V7's radio dots, the left one greyed) ------------- */
+
+
+.reframe {
+  margin-top: 44px;
+  border: 1px solid var(--line); border-radius: 20px;
+  background: var(--panel); overflow: hidden; box-shadow: var(--shadow-card);
+}
+.reframe-cols, .reframe-row { display: grid; grid-template-columns: 1fr 1fr; }
+.reframe-cols { background: var(--panel-2); border-bottom: 1px solid var(--line); }
+.reframe-col {
+  padding: 15px 24px; font-size: 12.5px; font-weight: 600; line-height: 1.5;
+  display: flex; align-items: center; gap: 9px;
+}
+.reframe-col-a { color: var(--ink-3); }
+.reframe-col-b { color: var(--ink); border-left: 1px solid var(--line); }
+.rdot {
+  width: 11px; height: 11px; border-radius: 50%; flex: none;
+  border: 1.5px solid currentColor; opacity: 0.55;
+}
+.rdot.on { opacity: 1; border-color: var(--accent); box-shadow: inset 0 0 0 2.5px var(--accent); }
+
+.reframe-row + .reframe-row { border-top: 1px solid var(--line); }
+.reframe-row > div { padding: 20px 24px; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+.reframe-row > div + div { color: var(--ink); font-weight: 600; }
+.reframe-row > div + div { border-left: 1px solid var(--line); }
+
+/* --- inside / six parts (Browserbase: a typographic mockup on a faint grid,
+       then an uppercase category, a body, and a pill link) ----------------- */
+.parts { margin-top: 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.part {
+  border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+  background: var(--panel); box-shadow: var(--shadow-card);
+  display: flex; flex-direction: column;
+}
+.part-vis {
+  padding: 26px 22px 28px; min-height: 138px;
+  background:
+    linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% 28px,
+    linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 28px 100%,
+    var(--panel-2);
+  display: flex; align-items: center;
+}
+.part-vis p {
+  font-family: var(--font-ui); font-size: 21px; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.24; color: var(--ink);
+}
+.part-vis mark {
+  background: var(--hl-ok); color: inherit;
+  box-shadow: inset 0 -3px 0 var(--ok);
+  border-radius: 2px; padding: 0 2px;
+}
+.part-vis mark.m2 { background: var(--hl-mid); box-shadow: inset 0 -3px 0 var(--mid); }
+.part-vis mark.m3 { background: var(--hl-flag); box-shadow: inset 0 -3px 0 var(--flag); }
+.part-body { padding: 20px 22px 24px; flex: 1; display: flex; flex-direction: column; }
+.part-cat {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ink-3); line-height: 1.6;
+}
+.part-body p { margin-top: 10px; font-size: 13.5px; line-height: 1.7; color: var(--ink-2); flex: 1; }
+.part-n {
+  margin-top: 16px; align-self: flex-start;
+  padding: 6px 13px; border-radius: 999px;
+  background: var(--cta-bg); color: var(--cta-ink);
+  font-size: 11.5px; font-weight: 600; line-height: 1.5;
+}
+
+/* --- on-device band (Attio: two-tone heading, body, then a row of small
+       assurance badges) --------------------------------------------------- */
+.band-badges { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px; }
+.badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 15px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--bg);
+  font-size: 12.5px; font-weight: 500; color: var(--ink-2); line-height: 1.5;
+}
+.badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
+.band h2 .dim { color: var(--ink-3); }
+
+/* --- the name (Zendesk: round badge above one oversized two-tone word) ---- */
+.define { border-top: 1px solid var(--line); padding: 96px 20px 104px; text-align: center; }
+.define-inner { max-width: 900px; margin: 0 auto; }
+.define-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 88px; height: 88px; border-radius: 50%;
+  background: var(--ink); color: var(--bg);
+  font-size: 12.5px; font-weight: 600; line-height: 1.35; text-align: center;
+}
+.define-word {
+  margin-top: 30px;
+  font-size: clamp(46px, 10vw, 118px); font-weight: 700;
+  letter-spacing: -0.045em; line-height: 1.02; color: var(--ink);
+}
+.define-word span { color: var(--accent-text); }
+.define-sub { margin: 22px auto 0; max-width: 46ch; font-size: 16px; line-height: 1.72; color: var(--ink-2); }
+.define-sub i { color: var(--ink-3); }
+
+/* --- FAQ (Zendesk: kicker, two-line centred heading, hairline rows) ------- */
+.faq-head { text-align: center; max-width: 640px; margin: 0 auto; }
+.faq-head h2 { margin-top: 14px; font-size: clamp(30px, 4.2vw, 46px); line-height: 1.1; }
+.faq-list { margin: 46px auto 0; max-width: 800px; border-top: 1px solid var(--line); }
+details.faq { border-bottom: 1px solid var(--line); }
+details.faq summary {
+  list-style: none; cursor: pointer; padding: 22px 4px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.5;
+}
+details.faq summary::-webkit-details-marker { display: none; }
+details.faq summary:hover { color: var(--accent-text); }
+details.faq summary svg { width: 16px; height: 16px; flex: none; color: var(--ink-3); transition: transform 0.25s ease; }
+details.faq[open] summary svg { transform: rotate(180deg); }
+details.faq p { padding: 0 60px 24px 4px; font-size: 14.5px; line-height: 1.78; color: var(--ink-2); }
+details.faq[open] p { animation: rise 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+
+/* --- footer (Linear: quiet columns, wordmark alone, hairline fine print) -- */
+.foot-grid { display: grid; gap: 40px; grid-template-columns: 2fr repeat(3, 1fr); padding: 64px 0 0; }
+.foot-about p { margin-top: 14px; max-width: 30ch; font-size: 13px; line-height: 1.7; color: var(--ink-3); }
+.foot-col h4 { font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6; }
+.foot-col ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.foot-col a, .foot-col button {
+  font-size: 13.5px; color: var(--ink-2); text-decoration: none; background: none; border: 0;
+  padding: 0; cursor: pointer; text-align: left; line-height: 1.6; transition: color 0.2s ease;
+}
+.foot-col a:hover, .foot-col button:hover { color: var(--ink); }
+.foot-base {
+  margin-top: 56px; padding: 22px 0 36px; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;
+  font-size: 11.5px; color: var(--ink-3); line-height: 1.7;
+}
+
+/* ------------------------------- responsive ------------------------------ */
+@media (max-width: 980px) {
+  .steps, .parts { grid-template-columns: 1fr 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .foot-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 720px) {
+  .steps, .parts, .people { grid-template-columns: 1fr; }
+  .foot-grid { grid-template-columns: 1fr; gap: 30px; }
+  /* the comparison stacks: each row becomes two stacked halves, and the
+     column headers move onto the halves themselves */
+  .reframe-cols { display: none; }
+  .reframe-row { grid-template-columns: 1fr; }
+  .reframe-row > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .reframe-row > div:first-child::before { content: "Tonight"; }
+  .reframe-row > div:last-child::before { content: "With this"; color: var(--accent-text); }
+  .reframe-row > div::before {
+    display: block; margin-bottom: 8px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-3); line-height: 1.6;
+  }
+  .define { padding: 68px 20px 74px; }
+  details.faq p { padding-right: 4px; }
+}
+
+/* ---- restored: the two blocks the landing rewrite over-trimmed ------------ */
+
+/* product annotations (ToDesktop): short handwritten labels in the margin, each
+   with a curved arrow landing on the element it names */
+.note { position: absolute; display: flex; align-items: flex-start; gap: 2px; }
+.note span {
+  font-family: "Caveat", ui-rounded, cursive;
+  font-size: 22px; line-height: 1.35; color: var(--accent-text);
+  max-width: 150px;
+}
+.note svg { width: 62px; height: 42px; flex: none; }
+.note-l { left: 0; top: 64px; flex-direction: column; align-items: flex-start; }
+.note-l svg { margin-left: 26px; }
+.note-r { right: 0; top: 56px; flex-direction: column; align-items: flex-end; text-align: right; }
+.note-r svg { margin-right: 20px; }
+.note-b { left: 168px; bottom: -50px; align-items: flex-end; }
+.note-b svg { width: 56px; height: 38px; }
+@media (max-width: 1320px) { .notes { display: none; } }
+
+/* on-device band (Oryzo): one claim set large, with a tiny label pinned in the
+   corner of the same band so it needs no heading above it */
+.band { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--panel); }
+.band-inner { position: relative; padding: 88px 20px 92px; max-width: 900px; }
+.band-tag {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent-text); line-height: 1.6; margin-bottom: 22px;
+}
+.band h2 { font-size: clamp(30px, 4.4vw, 50px); line-height: 1.08; }
+.band-p { margin-top: 20px; max-width: 58ch; font-size: 15.5px; line-height: 1.75; color: var(--ink-2); }
+
+
+/* =========================================================================
+   Flagship pass — sections rebuilt on Stripe, Linear and Vercel structures.
+   ========================================================================= */
+
+/* Stripe: a small accent label sitting above the heading, doing the job a
+   black tag pill was doing far more loudly. */
+.kicker-accent {
+  font-size: 13px; font-weight: 600; color: var(--accent-text); line-height: 1.5;
+}
+
+/* Vercel: content sits inside a hairline frame with crosshair marks at the
+   corners — a drafting convention that makes a plain block look measured. */
+.stats-band { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 84px 0; background: var(--panel); }
+.frame { position: relative; border: 1px solid var(--line); }
+.frame::before, .frame::after,
+.frame .frame-top::before, .frame .frame-top::after {
+  content: ""; position: absolute; width: 9px; height: 9px; pointer-events: none;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) center/100% 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) center/1px 100% no-repeat;
+}
+.frame::before { top: -5px; left: -5px; }
+.frame::after { top: -5px; right: -5px; }
+.frame .frame-top::before { bottom: -5px; left: -5px; }
+.frame .frame-top::after { bottom: -5px; right: -5px; }
+
+.frame-top { padding: 52px 48px 46px; max-width: 780px; }
+.frame-top h2 { font-size: clamp(28px, 3.6vw, 42px); line-height: 1.1; }
+.frame-top p { margin-top: 16px; font-size: 15.5px; line-height: 1.72; color: var(--ink-2); max-width: 56ch; }
+
+/* Vercel: the figure carries the weight, the rest of the sentence continues in
+   the body colour, so a number reads as a claim rather than a scoreboard. */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); }
+.stat {
+  padding: 26px 24px 30px; font-size: 15px; line-height: 1.5; color: var(--ink);
+}
+.stat + .stat { border-left: 1px solid var(--line); }
+.stat b { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; }
+.stat span { display: block; margin-top: 4px; font-size: 14px; color: var(--ink-3); line-height: 1.55; }
+.stat:last-child b, .stat:last-child { color: var(--accent-text); }
+.stat:last-child span { color: color-mix(in srgb, var(--accent-text) 70%, var(--ink-3)); }
+
+/* Linear: each card is numbered like a figure in a paper, which is exactly the
+   register a marking tool should be speaking in. */
+.part-fig {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-3); line-height: 1.6;
+}
+.part-vis { position: relative; }
+.part-vis .part-fig { position: absolute; top: 14px; left: 18px; }
+.part-vis p { margin-top: 18px; }
+
+/* Vercel: the closing ask is a dark panel with the action on the right, not a
+   centred column — it reads as a footer to the argument, not another pitch. */
+.final { border-top: 1px solid var(--line); padding: 90px 0 96px; }
+.cta-panel {
+  display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+  padding: 46px 48px; border-radius: 22px;
+  background: var(--ink); color: var(--bg);
+}
+.cta-panel h2 { font-size: clamp(26px, 3.4vw, 38px); line-height: 1.12; color: var(--bg); }
+.cta-panel p { margin-top: 12px; font-size: 15px; line-height: 1.65; color: color-mix(in srgb, var(--bg) 72%, var(--ink)); max-width: 46ch; }
+.btn-invert { background: var(--bg); color: var(--ink); flex: none; }
+.btn-invert:hover { opacity: 0.9; }
+
+@media (max-width: 980px) { .stats { grid-template-columns: 1fr 1fr; }
+  .stat:nth-child(3) { border-left: 0; }
+  .stat:nth-child(n+3) { border-top: 1px solid var(--line); } }
+@media (max-width: 640px) {
+  .stats { grid-template-columns: 1fr; }
+  .stat + .stat { border-left: 0; border-top: 1px solid var(--line); }
+  .frame-top { padding: 36px 24px 32px; }
+  .cta-panel { padding: 34px 26px; }
+}
+
+
+/* --- the dark break -------------------------------------------------------
+   The page had no contrast change anywhere in its length, which is why it read
+   as one long grey column however the sections were arranged. */
+.dark {
+  background: #14110f; color: #f4efe6;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+:root[data-theme="dark"] .dark { background: #060505; }
+.dark-inner { padding: 104px 20px 108px; }
+.dark-tag {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  color: #e0868c; line-height: 1.6;
+}
+.dark h2 {
+  margin-top: 24px; color: #f4efe6;
+  font-size: clamp(34px, 5.6vw, 66px); line-height: 1.04; letter-spacing: -0.038em;
+}
+.dark-badges { margin-top: 38px; display: flex; flex-wrap: wrap; gap: 10px; }
+.dark .badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.04);
+  font-size: 13px; font-weight: 500; color: #cdc5b8; line-height: 1.5;
+}
+.dark .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: #5cc48d; flex: none; }
+
+/* --- the product, full width --------------------------------------------- */
+.stage-section { padding: 0 20px 84px; }
+.stage-hold { position: relative; max-width: 1240px; margin: -30px auto 0; }
+.stage-hold .preview-wrap { max-width: 940px; margin: 0 auto; }
+.stage-hold .preview-card { padding: 10px; border-radius: 24px; }
+.stage-hold .preview-stage iframe { height: 660px; }
+
+/* --- people: the photograph does the talking ----------------------------- */
+.person figure { aspect-ratio: 5 / 4; }
+.person-body { padding: 20px 4px 0; }
+.person-body h3 { font-size: 19px; }
+.person-body p { margin-top: 7px; font-size: 14px; line-height: 1.6; color: var(--ink-3); }
+.person { background: none; border: 0; box-shadow: none; }
+.person figure { border-radius: 18px; }
+
+@media (max-width: 720px) {
+  .dark-inner { padding: 68px 20px 72px; }
+  .stage-hold .preview-stage iframe { height: 460px; }
+}
+
+
+/* =========================================================================
+   Correlated pass. Structures taken only from products that do what this one
+   does: Grammarly (reads your writing and marks it) and The New Yorker (the
+   register of reading). A payments company's stat block was never ours.
+   ========================================================================= */
+
+/* --- Grammarly: heading one side, a marked sentence and its finding card
+       floating on the other. The two cards overlap and cast real shadows,
+       which is what makes them read as objects rather than panels. --------- */
+.rows { padding: 96px 20px 30px; display: grid; gap: 108px; }
+.row { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
+.row-flip .row-copy { order: 2; }
+.row-flip .row-art { order: 1; }
+
+.row-cat {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--accent-text); line-height: 1.6;
+}
+.row-copy h2 { margin-top: 16px; font-size: clamp(28px, 3.6vw, 42px); line-height: 1.08; }
+.row-copy > p:last-child { margin-top: 16px; font-size: 16px; line-height: 1.7; color: var(--ink-2); max-width: 40ch; }
+
+.row-art { position: relative; padding: 20px 0 76px; }
+.gc {
+  border-radius: 16px; background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 22px 44px -14px rgba(30, 26, 22, 0.22), 0 2px 6px rgba(30, 26, 22, 0.05);
+}
+.gc-text { padding: 26px 28px; max-width: 78%; }
+.gc-text p { font-family: var(--font-serif); font-size: 18px; line-height: 1.68; color: var(--ink); }
+.gc-text em { font-style: normal; padding-bottom: 1px; }
+.u-ok { box-shadow: inset 0 -2px 0 var(--ok); background: var(--hl-ok); }
+.u-mid { box-shadow: inset 0 -2px 0 var(--mid); background: var(--hl-mid); }
+.u-flag { box-shadow: inset 0 -2px 0 var(--flag); background: var(--hl-flag); }
+
+.gc-find {
+  position: absolute; right: 0; bottom: 0; width: 58%;
+  padding: 16px 18px 18px;
+}
+.gc-cat {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-3); line-height: 1.6;
+}
+.gc-cat .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.d-ok { background: var(--ok); } .d-mid { background: var(--mid); } .d-flag { background: var(--flag); }
+.gc-body { margin-top: 9px; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+
+/* --- The New Yorker: a kicker, a serif headline, one line, a small image,
+       and a hairline. No cards, no shadows, no boxes. ---------------------- */
+.ed-title {
+  font-family: var(--font-serif); font-size: 26px; font-weight: 600;
+  text-align: center; letter-spacing: 0.01em; color: var(--ink);
+  padding-bottom: 26px; border-bottom: 1px solid var(--line);
+}
+.ed-list { display: grid; }
+.ed {
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(240px, 26vw, 360px);
+  gap: 48px; align-items: center;
+  padding: 34px 0; border-bottom: 1px solid var(--line);
+}
+.ed-kicker {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent-text); line-height: 1.6;
+}
+.ed h3 { margin-top: 10px; font-family: var(--font-serif); font-size: 27px; font-weight: 600; line-height: 1.2; letter-spacing: 0; }
+.ed > div > p:last-child { margin-top: 9px; font-size: 15px; line-height: 1.65; color: var(--ink-2); max-width: 52ch; }
+.ed figure {
+  margin: 0; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 6px;
+  background: var(--panel-2);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.10), 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+.ed figure img { transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1); }
+.ed:hover figure img { transform: scale(1.035); }
+.ed figure img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Photographic treatment lives in the COLOUR block at the end of this file.
+   It used to be a duotone, and it was set here. */
+
+@media (max-width: 900px) {
+  .rows { gap: 64px; padding-top: 64px; }
+  .row, .row-flip .row-copy, .row-flip .row-art { grid-template-columns: 1fr; order: 0; }
+  .row { gap: 26px; }
+  .gc-text { max-width: 88%; }
+  .gc-find { width: 72%; }
+  .ed { grid-template-columns: 1fr; gap: 18px; }
+  .ed figure { aspect-ratio: 16 / 7; }
+}
+
+/* --- restored: evidence marks in the essay --------------------------------
+   Without these the browser's own <mark> default takes over and every piece of
+   evidence renders in highlighter yellow — the one colour in the product that
+   is supposed to mean nothing. */
+mark.ev {
+  background: var(--hl-none); color: inherit;
+  border-radius: 3px; padding: 1px 0;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+  transition: background 0.3s ease;
+}
+/* The three per-verdict rules that used to sit here were already dead: the
+   block near "evidence: highlighted, not underlined" further down redeclares
+   every one of them. The live ones are at the end of this file. */
+mark.ev.pulse { animation: markPulse 1.1s ease; }
+@keyframes markPulse { 0%, 40% { background: var(--accent-soft); } 100% {} }
+
+/* --- rows: tighten the air between them ---------------------------------- */
+.rows { padding: 88px 20px 20px; gap: 76px; }
+.row-art { padding: 16px 0 64px; }
+
+
+/* the finding card clears the text card's last line instead of sitting on it —
+   covering the very mark it is describing was the one thing it must not do */
+.gc-text { margin-bottom: 46px; }
+.gc-find { bottom: 0; }
+.row-art { padding-bottom: 12px; }
+
+
+/* --- the colour key ------------------------------------------------------
+   Three colours carry the whole product. Naming them once, next to the thing
+   they mark, is the difference between a reader understanding the screenshot
+   and skipping it. */
+.legend { margin: 22px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.legend li { display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 1.5; color: var(--ink-3); }
+.legend b { color: var(--ink); font-weight: 600; }
+.legend .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+/* --- the preview has to look clickable -----------------------------------
+   The overlay only appeared on hover, so the product sat there looking like a
+   flat screenshot with dead buttons — which is exactly what people told me it
+   looked like. */
+.preview-play::before { background: rgba(20, 18, 16, 0.04); }
+.preview-play span {
+  opacity: 1; transform: none;
+  background: var(--cta-bg); color: var(--cta-ink);
+  box-shadow: 0 14px 30px -8px rgba(20, 18, 16, 0.45);
+}
+.preview-play:hover span { transform: translateY(-2px); }
+.preview-play:hover::before { background: rgba(20, 18, 16, 0.10); }
+
+/* the definition stands on its own now the badge is gone */
+.define { padding-top: 88px; }
+.define-word { margin-top: 0; }
+
+
+/* --- account settings ------------------------------------------------------
+   ClassDojo's panel shape: a category rail on the left, the person at the top
+   of the pane, then plain rows. Rows that are not editable put the label left
+   and the state or action right, the way Perplexity does it. */
+.nav-hello { cursor: pointer; }
+.nav-hello:hover { background: var(--panel-2); color: var(--ink); }
+
+.modal:has(.ac) { max-width: 720px; padding: 0; }
+.ac { display: grid; grid-template-columns: 216px minmax(0, 1fr); min-height: 430px; }
+.ac-rail { padding: 26px 20px; border-right: 1px solid var(--line); background: var(--panel-2); border-radius: 20px 0 0 20px; }
+.ac-rail h2 { font-size: 20px; }
+.ac-sub { margin-top: 6px; font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
+.ac-tabs { margin-top: 22px; display: grid; gap: 2px; }
+.ac-tabs button {
+  text-align: left; border: 0; background: none; cursor: pointer;
+  padding: 9px 11px; border-radius: 9px;
+  font-size: 13.5px; font-weight: 500; color: var(--ink-2); line-height: 1.5;
+}
+.ac-tabs button:hover { background: var(--panel); color: var(--ink); }
+.ac-tabs button[aria-current] { background: var(--panel); color: var(--ink); font-weight: 600; }
+
+.ac-pane { padding: 26px 26px 28px; }
+.ac-lead { font-size: 13.5px; line-height: 1.65; color: var(--ink-3); margin-bottom: 18px; }
+
+.ac-id { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+.ac-avatar {
+  width: 52px; height: 52px; border-radius: 50%; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ink); color: var(--bg); font-size: 17px; font-weight: 600; letter-spacing: 0.02em;
+}
+.ac-role { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); line-height: 1.6; }
+.ac-name { margin-top: 3px; font-size: 18px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+
+.ac-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 15px 0; border-top: 1px solid var(--line);
+}
+.ac-row b { display: block; font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.ac-row span:not(.chip):not(.dot) { display: block; margin-top: 4px; font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
+.ac-row .btn { flex: none; }
+.ac-locked { flex: none; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.ac-danger { color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.ac-danger:hover { color: var(--accent-text); border-color: var(--accent); }
+
+.ac-note { margin-top: 10px; font-size: 12px; line-height: 1.65; color: var(--ink-3); }
+.ac-actions { margin-top: 22px; display: flex; gap: 10px; }
+
+@media (max-width: 640px) {
+  .ac { grid-template-columns: 1fr; min-height: 0; }
+  .ac-rail { border-right: 0; border-bottom: 1px solid var(--line); border-radius: 20px 20px 0 0; }
+  .ac-tabs { grid-auto-flow: column; margin-top: 16px; }
+}
+
+
+/* the call-to-action sat dead centre over the essay text; bottom-centre keeps
+   it obvious without covering the thing it is inviting you to read */
+.preview-play { align-items: flex-end; padding-bottom: 26px; }
+
+
+/* --- dark-mode corrections ------------------------------------------------
+   Things that are right in light and wrong in dark, fixed at the point of use
+   rather than by inventing another token. */
+
+/* The full-bleed dark band has to sit BELOW the page, not above it, or the
+   page's own dark ground makes it disappear. */
+:root[data-theme="dark"] .dark { background: #0c0c0f; }
+:root[data-theme="dark"] .dark h2 { color: var(--ink); }
+:root[data-theme="dark"] .dark-tag { color: var(--accent-text); }
+:root[data-theme="dark"] .dark .badge {
+  border-color: rgba(255, 255, 255, 0.11); background: rgba(255, 255, 255, 0.05); color: var(--ink-2);
+}
+
+/* Cards need the hairline to read at all; the shadow does nothing here. */
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .step,
+:root[data-theme="dark"] .finding,
+:root[data-theme="dark"] .gc,
+:root[data-theme="dark"] .reframe,
+:root[data-theme="dark"] .preview-card { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05); }
+
+/* Light text on a dark ground optically gains weight. Easing the tracking back
+   is the standard correction and it is the single biggest readability win. */
+:root[data-theme="dark"] body { letter-spacing: 0.006em; }
+:root[data-theme="dark"] h1, :root[data-theme="dark"] h2 { letter-spacing: -0.03em; }
+
+/* The dark CTA panel was ink-on-ink and vanished into the page. */
+:root[data-theme="dark"] .cta-panel { background: var(--panel-2); color: var(--ink); }
+:root[data-theme="dark"] .cta-panel h2 { color: var(--ink); }
+:root[data-theme="dark"] .cta-panel p { color: var(--ink-2); }
+:root[data-theme="dark"] .btn-invert { background: var(--ink); color: var(--bg); }
+
+/* Photographs need to sit back further on dark or they punch a hole in it. */
+:root[data-theme="dark"] .ed figure img { filter: grayscale(1) contrast(1.02) brightness(0.72) sepia(0.08); }
+
+
+/* --- nav: links stay as long as they fit, then become a menu -------------- */
+.nav-menu { display: none; }
+@media (max-width: 860px) {
+  .nav-links { display: none; }
+  .nav-menu { display: inline-flex; }
+  .nav-inner { gap: 12px; }
+}
+.nav-sheet {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  min-width: 200px; padding: 8px;
+  border-radius: 16px; border: 1px solid var(--glass-edge);
+  background: var(--glass-bg);
+  backdrop-filter: blur(22px) saturate(190%); -webkit-backdrop-filter: blur(22px) saturate(190%);
+  box-shadow: var(--shadow-pop);
+  display: grid; gap: 2px;
+}
+.nav-sheet a {
+  padding: 10px 12px; border-radius: 10px;
+  font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; line-height: 1.5;
+}
+.nav-sheet a:hover { background: var(--panel-2); color: var(--ink); }
+
+
+/* the finding card overlaps only empty space under the sentence, never the
+   sentence itself — covering the mark it describes is the one failure mode */
+.gc-text { margin-bottom: 58px; }
+
+
+/* --- role picker ---------------------------------------------------------- */
+.role-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.role {
+  text-align: left; cursor: pointer;
+  padding: 12px 13px; border-radius: 13px;
+  border: 1px solid var(--line); background: var(--panel);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.role b { display: block; font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.role span { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.5; color: var(--ink-3); }
+.role:hover { border-color: var(--line-strong); }
+.role[aria-checked="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--accent-soft);
+}
+.field-label { margin-top: 16px; font-size: 12px; font-weight: 500; color: var(--ink-2); line-height: 1.55; }
+
+/* --- the empty app -------------------------------------------------------- */
+.empty { padding: 8px 2px; }
+.empty h3 { font-size: 20px; line-height: 1.3; }
+.empty p { margin-top: 10px; font-size: 14px; line-height: 1.7; color: var(--ink-2); }
+.empty .btn { margin-top: 18px; }
+.empty .link-quiet { margin-top: 12px; text-align: left; }
+.empty-line { font-size: 13.5px; color: var(--ink-3); line-height: 1.7; }
+.doc-blank {
+  font-family: var(--font-ui); font-size: 15px; line-height: 1.7; color: var(--ink-3);
+  padding: 40px 0;
+}
+
+@media (max-width: 520px) { .role-pick { grid-template-columns: 1fr; } }
+
+
+/* --- the typewriter demo -------------------------------------------------- */
+#btn-demo.is-running { border-color: var(--accent); color: var(--accent-text); }
+
+.demo-list { display: grid; gap: 12px; padding: 4px 2px; }
+.demo-item {
+  font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.5;
+  padding-bottom: 12px; border-bottom: 1px solid var(--line);
+  min-height: 1.5em;
+}
+/* the caret sits on whichever line is still being written */
+.demo-item:last-child::after,
+.doc-typing::after {
+  content: ""; display: inline-block;
+  width: 2px; height: 1em; margin-left: 2px;
+  background: var(--accent);
+  vertical-align: -0.14em;
+  animation: caret 1s steps(1) infinite;
+}
+@keyframes caret { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+.doc-typing { white-space: pre-wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-item:last-child::after, .doc-typing::after { animation: none; opacity: 0; }
+}
+
+
+/* --- props: each one anchored to the edge it was cut on -------------------
+   The cut edge is measured from the image's own alpha, not guessed. Bleeding
+   that edge past the viewport is the only way a truncated photograph never
+   shows the slice. */
+.prop-books {
+  /* truncated on top AND left: it can only live in the corner */
+  left: -132px; top: -108px; width: 340px;
+}
+.prop-pen {
+  /* truncated on top only: free horizontally, must hang off the top */
+  right: 34px; top: -74px; width: 320px; transform: rotate(6deg);
+}
+.prop-specs {
+  /* no cut edges at all, so this one is free to sit in open space */
+  left: 46px; top: 322px; width: 190px; transform: rotate(-9deg);
+}
+@media (max-width: 1279px) {
+  .prop-books { left: -168px; top: -128px; width: 280px; }
+  .prop-pen { right: -60px; top: -66px; width: 250px; }
+  .prop-specs { display: none; }
+}
+@media (max-width: 900px) { .props { display: none; } }
+
+
+/* --- the assistant -------------------------------------------------------- */
+.ask { border-top: 1px solid var(--line); background: var(--panel); flex: none; }
+.ask-log { max-height: 240px; overflow-y: auto; padding: 14px 18px 4px; display: grid; gap: 10px; }
+.ask-log:empty { display: none; }
+.ask-msg p { font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; }
+.ask-you { justify-self: end; max-width: 84%; }
+.ask-you p {
+  padding: 9px 13px; border-radius: 14px 14px 4px 14px;
+  background: var(--cta-bg); color: var(--cta-ink);
+}
+.ask-sr { max-width: 92%; }
+.ask-sr p { color: var(--ink-2); }
+
+.ask-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 18px 0; }
+.ask-chips button {
+  padding: 6px 11px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg);
+  font-size: 12px; color: var(--ink-2); line-height: 1.5;
+}
+.ask-chips button:hover { border-color: var(--line-strong); color: var(--ink); }
+
+.ask-form { display: flex; gap: 8px; padding: 12px 18px 16px; }
+.ask-input {
+  flex: 1; min-width: 0;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--bg); color: var(--ink);
+  padding: 10px 16px; font-family: inherit; font-size: 13.5px; line-height: 1.5;
+}
+.ask-input:focus { border-color: var(--line-strong); }
+.ask-send {
+  width: 38px; height: 38px; flex: none; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--cta-bg); color: var(--cta-ink);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ask-send svg { width: 16px; height: 16px; }
+.ask-send:hover { opacity: 0.88; }
+
+.pane-find { display: flex; flex-direction: column; }
+.pane-find .pane-scroll { flex: 1; min-height: 0; }
+
+/* --- app shell: fill the viewport so the panes scroll, not the page --------
+   .app was min-height:100vh, so a long findings list grew the whole shell and
+   pushed the assistant off the bottom of the screen. On desktop the shell is
+   the viewport; each pane scrolls inside it and the dock stays put. */
+@media (min-width: 981px) {
+  .app { height: 100vh; overflow: hidden; }
+  .app-body { min-height: 0; }
+  .pane { min-height: 0; }
+}
+
+
+/* ==========================================================================
+   THE APP, REBUILT
+
+   Three columns, and you type into two of them.
+
+     left    the checklist          7shifts / Coda   rows are the inputs, and a
+                                                     ghost row waits at the end
+     middle  the essay              Linear / Notion  one grey placeholder, and a
+                                                     "get started" row under it
+     bottom  the counts             Grammarly        one thin strip under the text
+     right   evidence and ask       Grammarly/Notion one column, two tabs
+
+   The old version had two read-only panes and a modal. There was nowhere to
+   put a word.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ the bar */
+
+.app-bar {
+  gap: 10px;
+  padding: 9px 14px;
+  flex-wrap: nowrap;
+}
+.app-bar .brand { margin: 0; flex: none; }
+.app-bar .brand .mark { width: 26px; height: 26px; }
+
+/* Craft and Confluence both put the document's own title in the bar. It is a
+   real input, so the first thing you can do on this screen is name the thing
+   you are about to work on. */
+.title-input {
+  flex: 1 1 auto; min-width: 60px; max-width: 380px;
+  border: 1px solid transparent; border-radius: 9px; background: transparent;
+  padding: 6px 9px;
+  font-family: var(--font-ui); font-size: 14px; font-weight: 600;
+  color: var(--ink); line-height: 1.5;
+  text-overflow: ellipsis;
+}
+.title-input::placeholder { color: var(--ink-3); font-weight: 500; }
+.title-input:hover { background: var(--panel-2); }
+.title-input:focus { background: var(--panel-2); border-color: var(--line-strong); outline: none; }
+.title-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Lit only when pressing it would produce something new. */
+#btn-read.is-ready {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+#btn-demo.is-running { border-color: var(--accent); color: var(--accent-text); }
+
+.menu-wrap { position: relative; flex: none; }
+.more-sheet {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  min-width: 210px; padding: 6px;
+  border-radius: 14px; border: 1px solid var(--line);
+  background: var(--panel); box-shadow: var(--shadow-pop);
+  display: grid; gap: 1px;
+  animation: rise 0.18s ease both;
+}
+.more-sheet button {
+  text-align: left; padding: 9px 11px; border-radius: 9px;
+  font-family: var(--font-ui); font-size: 13.5px; font-weight: 500;
+  color: var(--ink-2); line-height: 1.55; background: none; border: 0; cursor: pointer;
+}
+.more-sheet button:hover { background: var(--panel-2); color: var(--ink); }
+
+/* ----------------------------------------------------------------- the grid */
+
+.app-body {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr) 372px;
+  column-gap: 1px;
+  background: var(--line);
+  align-items: stretch;
+}
+.app-body.no-rail { grid-template-columns: minmax(0, 1fr) 372px; }
+.app-body.no-rail .rail { display: none; }
+
+/* --------------------------------------------------------------- the rail */
+
+.rail {
+  background: var(--bg); min-width: 0;
+  display: flex; flex-direction: column; min-height: 0;
+}
+.rail-head {
+  flex: none; padding: 14px 16px 11px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.rail-head h2 {
+  font-family: var(--font-ui); font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6;
+}
+.rail-head .kicker { font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+.rail-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 12px 24px; }
+.rail-hint { padding: 0 4px 12px; font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
+.rail-foot { flex: none; padding: 11px 16px; border-top: 1px solid var(--line); }
+.rail-foot .link-quiet { font-size: 12.5px; }
+
+.crits { display: grid; gap: 3px; }
+
+/* 7shifts: the row IS the input. No edit mode, nothing to save. */
+.crit {
+  position: relative;
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) 26px;
+  align-items: start; gap: 8px;
+  padding: 9px 8px 9px 6px; border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+.crit:hover { background: var(--panel); border-color: var(--line); }
+.crit:focus-within { background: var(--panel); border-color: var(--line-strong); }
+.crit.is-open { background: var(--panel); border-color: currentColor; }
+
+.crit-dot {
+  width: 8px; height: 8px; margin-top: 7px; border-radius: 50%;
+  background: transparent; border: 1.5px solid var(--line-strong);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.crit[data-tone="ok"]   { color: var(--ok); }
+.crit[data-tone="mid"]  { color: var(--mid); }
+.crit[data-tone="none"] { color: var(--none); }
+.crit[data-tone="flag"] { color: var(--flag); }
+.crit[data-tone="ok"] .crit-dot,
+.crit[data-tone="mid"] .crit-dot,
+.crit[data-tone="none"] .crit-dot,
+.crit[data-tone="flag"] .crit-dot { background: currentColor; border-color: currentColor; }
+
+.crit-fields { min-width: 0; display: grid; gap: 1px; }
+.crit-name, .crit-desc {
+  width: 100%; border: 0; background: none; padding: 1px 0;
+  font-family: var(--font-ui); color: var(--ink); line-height: 1.5;
+}
+.crit-name { font-size: 13.5px; font-weight: 600; }
+.crit-desc { font-size: 12.5px; font-weight: 400; color: var(--ink-2); line-height: 1.55; }
+.crit-name::placeholder, .crit-desc::placeholder { color: var(--ink-3); font-weight: 400; }
+.crit-name:focus, .crit-desc:focus { outline: none; }
+.crit-name:focus-visible, .crit-desc:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+/* A row nobody has named yet does not need its second line shouting at them. */
+.crit:not(:hover):not(:focus-within) .crit-desc:placeholder-shown { opacity: 0; height: 0; padding: 0; }
+
+.crit-del {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border: 0; background: none; border-radius: 7px; cursor: pointer;
+  color: var(--ink-3); opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.crit-del svg { width: 14px; height: 14px; }
+.crit:hover .crit-del, .crit:focus-within .crit-del { opacity: 1; }
+.crit-del:hover { background: var(--panel-2); color: var(--accent); }
+.crit-del:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.crit-add {
+  width: 100%; margin-top: 3px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 8px 10px 6px; border: 0; border-radius: 10px; background: none;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+  color: var(--ink-3); line-height: 1.5; cursor: pointer; text-align: left;
+}
+.crit-add svg { width: 14px; height: 14px; flex: none; }
+.crit-add:hover { background: var(--panel); color: var(--ink); }
+
+/* ------------------------------------------------------------ the document */
+
+.pane-doc {
+  background: var(--panel); min-width: 0;
+  display: flex; flex-direction: column; min-height: 0;
+}
+.doc-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 44px 40px 80px; }
+
+/* Linear's empty document: no toolbar, no chrome, one grey line, caret already
+   in it. The measure is the only thing doing any work. */
+.doc {
+  max-width: 66ch; margin: 0 auto; padding: 0;
+  font-family: var(--font-serif); font-size: 17.5px; line-height: 1.8; color: var(--ink);
+  white-space: pre-wrap; word-wrap: break-word;
+  outline: none;
+}
+
+.doc.is-blank::before {
+  content: attr(data-placeholder);
+  color: var(--ink-3); pointer-events: none; user-select: none; -webkit-user-select: none;
+}
+.doc.is-marked { white-space: normal; }
+.doc.is-marked p + p { margin-top: 1.05em; }
+.doc.is-marked mark { cursor: pointer; }
+.doc.is-typing::after {
+  content: ""; display: inline-block;
+  width: 2px; height: 1em; margin-left: 1px;
+  background: var(--accent); vertical-align: -0.14em;
+  animation: caret 1s steps(1) infinite;
+}
+
+
+/* Grammarly's status strip: the numbers you want while looking at a page of
+   writing, on one thin line under it, and the view switch beside them. */
+.doc-status {
+  flex: none; display: flex; align-items: center; gap: 12px;
+  padding: 8px 16px; border-top: 1px solid var(--line); background: var(--panel);
+}
+.doc-count { font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+.doc-stale {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-text);
+  font-size: 11px; font-weight: 600; line-height: 1.6;
+}
+.doc-modes {
+  margin-left: auto; display: flex; gap: 2px; padding: 2px;
+  border-radius: 9px; background: var(--panel-2);
+}
+.doc-modes button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border: 0; border-radius: 7px; background: none;
+  font-family: var(--font-ui); font-size: 12px; font-weight: 500;
+  color: var(--ink-3); line-height: 1.6; cursor: pointer;
+}
+.doc-modes button svg { width: 13px; height: 13px; }
+.doc-modes button[aria-pressed="true"] {
+  background: var(--panel); color: var(--ink); box-shadow: var(--shadow-card);
+}
+.doc-modes button:disabled { opacity: 0.4; cursor: default; }
+
+/* ------------------------------------------------------------- the side */
+
+.side {
+  background: var(--bg); min-width: 0;
+  display: flex; flex-direction: column; min-height: 0;
+}
+/* Grammarly's review panel: a tab strip over ONE scrolling column. The
+   document never moves; the panel changes. */
+.side-tabs {
+  flex: none; display: flex; gap: 2px; padding: 8px 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.side-tabs button {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 13px 11px; border: 0; background: none; cursor: pointer;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+  color: var(--ink-3); line-height: 1.55;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.side-tabs button:hover { color: var(--ink-2); }
+.side-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab-count {
+  padding: 1px 7px; border-radius: 999px; background: var(--panel-2);
+  font-size: 11px; font-weight: 600; color: var(--ink-2); line-height: 1.65;
+}
+.side-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.side-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 16px 36px; }
+
+.empty-steps { margin-top: 16px; padding: 0; list-style: none; display: grid; gap: 11px; }
+.empty-steps li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 14px; line-height: 1.6; color: var(--ink-2);
+}
+.empty-steps i {
+  flex: none; width: 17px; height: 17px; margin-top: 2px; border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  background: no-repeat center / 9px 9px;
+}
+.empty-steps li.done { color: var(--ink-3); }
+.empty-steps li.done i {
+  border-color: var(--ok); background-color: var(--ok);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'20 6 9 17 4 12\'/%3E%3C/svg%3E");
+}
+
+/* --------------------------------------------------------------- the ask */
+
+/* Notion's assistant column: the log grows, the composer is pinned to the
+   bottom of the panel and never scrolls away. */
+.ask { flex: 1; min-height: 0; display: flex; flex-direction: column; border: 0; background: none; }
+.ask-log {
+  flex: 1; min-height: 0; max-height: none; overflow-y: auto;
+  padding: 18px 16px 8px; display: grid; gap: 10px; align-content: start;
+}
+.ask-log:empty { display: grid; }
+.ask-log:empty::before {
+  content: "Ask about this essay. Every answer is built from lines that are actually in it \2014 and it will not give you a mark.";
+  display: block; max-width: 30ch;
+  font-size: 13px; line-height: 1.7; color: var(--ink-3);
+}
+.ask-foot { flex: none; border-top: 1px solid var(--line); background: var(--bg); }
+
+/* --------------------------------------------------------------- footer */
+
+.app-foot { padding: 9px 16px; }
+
+/* ------------------------------------------------------------ responsive */
+
+@media (max-width: 1240px) {
+  .app-body { grid-template-columns: 262px minmax(0, 1fr) 336px; }
+  .app-body.no-rail { grid-template-columns: minmax(0, 1fr) 336px; }
+  .doc-scroll { padding: 38px 28px 70px; }
+}
+
+/* The rail folds away first: the essay and what was found in it are the two
+   things you cannot mark without. */
+@media (max-width: 1080px) {
+  .app-body { grid-template-columns: 238px minmax(0, 1fr) 318px; }
+  .app-body.no-rail { grid-template-columns: minmax(0, 1fr) 318px; }
+}
+
+@media (max-width: 900px) {
+  /* One column, page-scrolled. A scroll region inside a scrolling document is
+     the classic way to strand content on a phone. */
+  .app { height: auto; overflow: visible; }
+  .app-body,
+  .app-body.no-rail { display: block; background: var(--bg); }
+  /* Stacked, the rail is simply the first section again, so folding it away
+     would only hide the checklist with no column to gain back. */
+  .app-body .rail,
+  .app-body.no-rail .rail { display: flex; border-bottom: 1px solid var(--line); }
+  #btn-rail { display: none; }
+  .rail, .pane-doc, .side { min-height: 0; }
+  .rail-scroll, .doc-scroll, .side-scroll, .ask-log { overflow: visible; max-height: none; }
+  .doc-scroll { padding: 26px 20px 30px; }
+  .pane-doc { border-bottom: 1px solid var(--line); }
+  .doc { font-size: 17px; }
+  .side-tabs { position: sticky; top: 0; z-index: 5; background: var(--bg); }
+  .ask-log { min-height: 120px; }
+  /* Narrow, the bar is two deliberate rows rather than three accidental ones:
+     what you are working on, then what you can do to it. The spacer is turned
+     into a zero-height full-width item so the break happens where it is meant
+     to instead of wherever the last button stopped fitting. */
+  .app-bar { flex-wrap: wrap; row-gap: 7px; padding: 8px 12px; }
+  .app-bar .brand { order: 1; }
+  .title-input { order: 2; max-width: none; flex: 1 1 120px; }
+  .menu-wrap { order: 3; }
+  .app-bar [data-theme-toggle] { order: 4; }
+  .app-bar-spacer { order: 5; flex-basis: 100%; height: 0; margin: 0; }
+  .reader-chips { order: 6; margin-right: auto; flex-wrap: wrap; }
+  .reader-chip { padding: 3px 8px; font-size: 11px; }
+  #btn-demo { order: 7; }
+  #btn-read { order: 8; }
+}
+
+@media (max-width: 560px) {
+  .app-bar { gap: 7px; padding: 8px 12px; }
+  #btn-demo { display: none; }
+  .doc-status { flex-wrap: wrap; gap: 8px; }
+  .doc-modes { margin-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc.is-typing::after { animation: none; opacity: 0; }
+}
+
+
+/* --- evidence: highlighted, not underlined -------------------------------
+   The inset rule under every marked sentence read as a correction. Nothing
+   here is a correction: it is the line that answers the item you opened. A
+   soft block of colour says "here", which is all it has to say. */
+mark.ev {
+  padding: 2px 3px; margin: 0 -1px;
+  border-radius: 4px;
+  box-shadow: none;
+}
+mark.ev.ok { background: var(--hl-ok); box-shadow: none; }
+mark.ev.mid { background: var(--hl-mid); box-shadow: none; }
+mark.ev.none { background: var(--hl-none); box-shadow: none; }
+mark.ev.flag { background: var(--hl-flag); box-shadow: none; }
+.doc.is-marked mark.ev { transition: background 0.2s ease, box-shadow 0.2s ease; }
+.doc.is-marked mark.ev:hover { box-shadow: 0 0 0 1px currentColor; }
+
+
+/* --- the checklist descriptor grows instead of clipping ------------------
+   It was an <input>, so a full sentence stopped mid-word with no ellipsis and
+   hid the exact wording the engine matches against. */
+textarea.crit-desc {
+  resize: none; overflow: hidden; min-height: 1.55em;
+  font-family: var(--font-ui); font-size: 12.5px; font-weight: 400;
+  color: var(--ink-2); line-height: 1.55;
+  border: 0; background: none; padding: 1px 0; width: 100%;
+}
+.crit:not(:hover):not(:focus-within):not(.is-open) textarea.crit-desc:placeholder-shown {
+  height: 0 !important; min-height: 0; opacity: 0; padding: 0;
+}
+
+
+/* --- touch: nothing that only appears on hover ---------------------------
+   The delete control faded in on hover, which on a phone means it never
+   appears at all and a row cannot be removed. On a coarse pointer it is
+   simply always there, at a size a thumb can hit. */
+@media (hover: none) {
+  /* The 40px track this used to set was reset by a plain .crit rule ~140 lines
+     further down - same specificity, later in the file - so every phone got a
+     40px button in a 26px column. The winning rule is overridden at the end of
+     this file instead; see COLOUR IN THE READER. */
+  .crit-del { opacity: 1; width: 40px; height: 40px; }
+  /* `height: auto !important` used to be here too. grow() measures the
+     textarea and sets an inline height on it, and author !important outranks
+     an inline style - so with rows="1" and overflow:hidden, everything past
+     the first line of a criterion was invisible on touch. */
+  .crit-desc { opacity: 1 !important; }
+  .app-bar .brand { padding: 7px; margin: -7px; }
+  .rail-foot .link-quiet { display: block; padding: 10px 0; }
+}
+
+
+/* --- the bar stays one line ----------------------------------------------
+   In the embedded preview the bar is under 950px and both the buttons and the
+   reader chips were wrapping to a second line, which doubled its height and
+   split "Read it" across two rows. */
+.app-bar .btn,
+.app-bar .reader-chip { white-space: nowrap; }
+.app-bar .reader-chips { flex: none; flex-wrap: nowrap; }
+@media (min-width: 901px) {
+  .app-bar { flex-wrap: nowrap; }
+  .app-bar .title-input { min-width: 40px; }
+}
+
+
+/* ==========================================================================
+   INTERFACE v2
+
+   The panes used to be flat regions divided by hairlines, which is why it read
+   as a wireframe. Now each region is a card floating on the app ground - the
+   shape every tool in this class has settled on, because it says what is a
+   surface and what is background without drawing a single line.
+
+     ground      the app                     Linear / Vapi
+     rail        7shifts rows, Matter labels, Juicebox active bar
+     document    Linear empty state, Notion first-moves, a raised sheet
+     coverage    Arcade insight bars + a minimap of where evidence sits
+     side        Grammarly tab strip over one scrolling column
+     composer    Langdock / Notion Sidekick card with its own toolbar row
+     palette     Vapi / Juicebox grouped rows with a hint bar
+   ========================================================================== */
+
+:root {
+  /* Per-criterion hues for "All" view and the coverage map. Editorial rather
+     than dashboard: muted, ink-adjacent, and legible over serif body text. */
+  --c1: #9e536c;   /* was #8c2f39, byte-identical to --accent */
+  --c2: #2f6b52;
+  --c3: #38558a;
+  --c4: #8a6524;
+  --c5: #6a3d78;
+  --c6: #256c76;
+  --c1-soft: rgba(140, 47, 57, 0.15);
+  --c2-soft: rgba(47, 107, 82, 0.15);
+  --c3-soft: rgba(56, 85, 138, 0.15);
+  --c4-soft: rgba(138, 101, 36, 0.16);
+  --c5-soft: rgba(106, 61, 120, 0.15);
+  --c6-soft: rgba(37, 108, 118, 0.15);
+  --ground: #eeece8;
+}
+:root[data-theme="dark"] {
+  --c1: #e0a0b4;   /* was #d68d94, byte-identical to --accent */
+  --c2: #74c39a;
+  --c3: #8fa9dd;
+  --c4: #d4ab63;
+  --c5: #b995c8;
+  --c6: #74bcc6;
+  --c1-soft: rgba(214, 141, 148, 0.2);
+  --c2-soft: rgba(116, 195, 154, 0.18);
+  --c3-soft: rgba(143, 169, 221, 0.2);
+  --c4-soft: rgba(212, 171, 99, 0.18);
+  --c5-soft: rgba(185, 149, 200, 0.2);
+  --c6-soft: rgba(116, 188, 198, 0.18);
+  --ground: #0d0d10;
+}
+
+/* ------------------------------------------------------------------ shell */
+
+.app { background: var(--ground); }
+.app-bar {
+  background: var(--ground); border-bottom: 0;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  padding: 10px 14px 4px;
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: 288px minmax(0, 1fr) 376px;
+  column-gap: 10px;
+  padding: 6px 12px 0;
+  background: var(--ground);
+}
+.app-body.no-rail { grid-template-columns: minmax(0, 1fr) 376px; }
+.app-body.no-rail .rail { display: none; }
+
+/* Every region is a card. This one change does most of the work: it separates
+   surface from ground without a single divider line. */
+.rail, .pane-doc, .side {
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  overflow: hidden;
+  min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+}
+.pane-doc { position: relative; box-shadow: var(--shadow-card); }
+
+.app-foot {
+  background: var(--ground); border-top: 0;
+  padding: 10px 16px 12px;
+}
+
+/* -------------------------------------------------------------------- bar */
+
+.kbar {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 8px 6px 11px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel);
+  font-family: var(--font-ui); font-size: 12.5px; font-weight: 500;
+  color: var(--ink-3); line-height: 1.55; cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.kbar svg { width: 13px; height: 13px; }
+.kbar:hover { border-color: var(--line-strong); color: var(--ink-2); }
+.kbar kbd {
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 600; line-height: 1.6;
+  padding: 2px 6px; border-radius: 6px;
+  background: var(--panel-2); color: var(--ink-3);
+}
+@media (max-width: 1420px) { .kbar span { display: none; } .kbar { padding: 6px 8px; } }
+@media (max-width: 1180px) { .kbar { display: none; } }
+
+.reader-chip { background: var(--panel); }
+
+/* ------------------------------------------------------------------- rail */
+
+.rail-head, .side-tabs, .rail-foot, .doc-status { background: var(--panel); }
+.rail-head { padding: 15px 16px 12px; }
+.rail-scroll { padding: 12px 10px 22px; }
+.rail-hint { padding: 0 6px 12px; }
+
+.crits { gap: 2px; }
+
+/* Juicebox marks the live row with a bar on its leading edge rather than a
+   full border, so the row still reads as part of a list. */
+.crit {
+  padding-left: 12px;
+  grid-template-columns: 10px minmax(0, 1fr) 26px;
+}
+.crit::before {
+  content: ""; position: absolute; left: 3px; top: 8px; bottom: 8px;
+  width: 2.5px; border-radius: 2px; background: transparent;
+  transition: background 0.18s ease;
+}
+.crit.is-open::before { background: currentColor; }
+.crit.is-open { background: var(--panel-2); border-color: transparent; }
+.crit:hover { background: var(--panel-2); border-color: transparent; }
+.crit:focus-within { background: var(--panel-2); border-color: transparent; }
+.crit-dot { width: 7px; height: 7px; margin-top: 8px; }
+
+/* --------------------------------------------------------------- document */
+
+.doc-scroll { padding: 46px 0 90px; }
+.doc { padding-inline: 44px; }
+.doc { max-width: none; width: min(66ch, 100%); margin: 0 auto; }
+
+/* The status strip floats over the sheet instead of sitting on a border, so
+   the page of writing runs to the bottom edge of the card. */
+.doc-status {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  padding: 8px 14px;
+}
+.doc-modes button svg { width: 12.5px; height: 12.5px; }
+.doc-modes button { padding: 5px 10px; }
+
+/* ------------------------------------------------- the marks, one per hue */
+
+.doc.is-all mark.ev { box-shadow: none; }
+.doc mark[data-c="0"] { background: var(--c1-soft); }
+.doc mark[data-c="1"] { background: var(--c2-soft); }
+.doc mark[data-c="2"] { background: var(--c3-soft); }
+.doc mark[data-c="3"] { background: var(--c4-soft); }
+.doc mark[data-c="4"] { background: var(--c5-soft); }
+.doc mark[data-c="5"] { background: var(--c6-soft); }
+/* No leading rule on these. box-decoration-break: clone gives every wrapped
+   line its own copy, so a two-line quote grew a bracket in the middle of the
+   paragraph. The hue carries it instead - which is why these are a step
+   stronger than the single-criterion tint. */
+.doc.is-all mark[data-c="0"] { background: color-mix(in srgb, var(--c1) 22%, transparent); }
+.doc.is-all mark[data-c="1"] { background: color-mix(in srgb, var(--c2) 22%, transparent); }
+.doc.is-all mark[data-c="2"] { background: color-mix(in srgb, var(--c3) 22%, transparent); }
+.doc.is-all mark[data-c="3"] { background: color-mix(in srgb, var(--c4) 24%, transparent); }
+.doc.is-all mark[data-c="4"] { background: color-mix(in srgb, var(--c5) 22%, transparent); }
+.doc.is-all mark[data-c="5"] { background: color-mix(in srgb, var(--c6) 22%, transparent); }
+
+/* ---------------------------------------------------- the coverage minimap */
+
+/* Nothing else in the app answers "where in the essay is this?", and the answer
+   is a real marking observation - a counterargument that lives entirely in one
+   paragraph is a different problem from one that is threaded through. */
+.cov-strip {
+  position: absolute; right: 9px; top: 20px; bottom: 58px;
+  width: 12px; z-index: 3;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.cov-band {
+  position: absolute; left: 2px; right: 2px;
+  min-height: 4px; border-radius: 999px;
+  border: 0; padding: 0; cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+.cov-band:hover, .cov-band:focus-visible { opacity: 1; transform: scaleX(1.55); }
+.cov-band[data-c="0"] { background: var(--c1); }
+.cov-band[data-c="1"] { background: var(--c2); }
+.cov-band[data-c="2"] { background: var(--c3); }
+.cov-band[data-c="3"] { background: var(--c4); }
+.cov-band[data-c="4"] { background: var(--c5); }
+.cov-band[data-c="5"] { background: var(--c6); }
+.cov-view {
+  position: absolute; left: -3px; right: -3px;
+  border-radius: 999px; pointer-events: none;
+  border: 1.5px solid var(--line-strong);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+/* ------------------------------------------------------ the coverage panel */
+
+/* Arcade's insight page: a row of tiles, then one labelled bar per row with
+   the number at the end of the bar. */
+.cov-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cov-tile {
+  padding: 12px 13px; border-radius: 13px;
+  border: 1px solid var(--line); background: var(--panel-2);
+}
+.cov-tile b { display: block; font-size: 22px; font-weight: 700; line-height: 1.25; letter-spacing: -0.02em; }
+.cov-tile span { display: block; margin-top: 3px; font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+
+.cov-label {
+  margin: 22px 0 10px;
+  font-family: var(--font-ui); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6;
+}
+.cov-row { padding: 11px 0; border-bottom: 1px solid var(--line); }
+.cov-row:last-child { border-bottom: 0; }
+.cov-row-top { display: flex; align-items: baseline; gap: 8px; }
+.cov-name { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.5; }
+.cov-hits { font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+.cov-track {
+  position: relative; height: 8px; margin-top: 9px;
+  border-radius: 999px; background: var(--panel-2); overflow: hidden;
+}
+.cov-hit { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 999px; }
+.cov-hit[data-c="0"] { background: var(--c1); }
+.cov-hit[data-c="1"] { background: var(--c2); }
+.cov-hit[data-c="2"] { background: var(--c3); }
+.cov-hit[data-c="3"] { background: var(--c4); }
+.cov-hit[data-c="4"] { background: var(--c5); }
+.cov-hit[data-c="5"] { background: var(--c6); }
+.cov-read { margin-top: 8px; font-size: 12.5px; line-height: 1.6; color: var(--ink-2); }
+.cov-scale {
+  display: flex; justify-content: space-between; margin-top: 6px;
+  font-size: 10.5px; color: var(--ink-3); line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------- the ask */
+
+.side-tabs button { gap: 6px; }
+.tab-spark { width: 12px; height: 12px; color: var(--accent-text); }
+
+.ask-log { padding: 18px 15px 10px; gap: 14px; }
+.ask-log:empty::before {
+  content: "Ask about this essay. Every answer is built from lines that are actually in it \2014  and it will not give you a mark.";
+  max-width: 32ch;
+}
+.ask-you p {
+  border-radius: 15px 15px 4px 15px;
+}
+.ask-sr { max-width: 100%; }
+.ask-sr p { color: var(--ink); }
+
+/* Fabric names its assistant above the answer. It costs one line and it is the
+   difference between "a box replied" and "something answered you". */
+.ask-who {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 5px;
+  font-family: var(--font-ui); font-size: 11.5px; font-weight: 600;
+  color: var(--ink-3); line-height: 1.6;
+}
+.ask-who svg { width: 12px; height: 12px; color: var(--accent-text); }
+.ask-acts { display: flex; gap: 4px; margin-top: 8px; }
+.ask-acts button {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 7px; border: 0; background: none;
+  font-family: var(--font-ui); font-size: 11.5px; font-weight: 500;
+  color: var(--ink-3); line-height: 1.6; cursor: pointer;
+}
+.ask-acts button svg { width: 12px; height: 12px; }
+.ask-acts button:hover { background: var(--panel-2); color: var(--ink); }
+
+.ask-dots { display: inline-flex; gap: 4px; padding: 4px 0; }
+.ask-dots i {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3);
+  animation: askdot 1.2s ease-in-out infinite;
+}
+.ask-dots i:nth-child(2) { animation-delay: 0.16s; }
+.ask-dots i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes askdot { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
+
+.ask-foot { padding: 10px 12px 12px; background: var(--panel); }
+.ask-chips { padding: 0 0 9px; gap: 5px; }
+.ask-chips button { background: var(--panel-2); border-color: transparent; }
+.ask-chips button:hover { background: var(--panel-2); border-color: var(--line-strong); }
+
+/* Langdock: the composer is a card with its own toolbar row inside it, so the
+   send control and the context belong to the message rather than to the page. */
+.composer {
+  display: block; padding: 10px 10px 8px;
+  border-radius: 15px; border: 1px solid var(--line);
+  background: var(--panel-2);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.composer:focus-within {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.composer-input {
+  display: block; width: 100%; max-height: 132px;
+  border: 0; background: none; resize: none; overflow-y: auto;
+  font-family: var(--font-ui); font-size: 13.5px; color: var(--ink);
+  line-height: 1.6; padding: 2px 2px 6px;
+}
+.composer-input:focus { outline: none; }
+.composer-input::placeholder { color: var(--ink-3); }
+.composer-bar { display: flex; align-items: center; gap: 8px; }
+.composer-src {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px; border-radius: 999px; background: var(--panel);
+  font-size: 11px; font-weight: 500; color: var(--ink-2); line-height: 1.6;
+}
+.composer-src .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); flex: none; }
+.composer-src.is-off .dot { background: var(--none); }
+.composer-hint { margin-left: auto; font-size: 11px; color: var(--ink-3); line-height: 1.6; }
+.composer-hint kbd {
+  font-family: var(--font-ui); font-size: 10px; padding: 1px 5px; border-radius: 5px;
+  background: var(--panel); color: var(--ink-3);
+}
+@media (max-width: 1240px) { .composer-hint { display: none; } }
+.composer-send {
+  width: 29px; height: 29px; flex: none;
+  display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: var(--cta-bg); color: var(--cta-ink); cursor: pointer;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+.composer-send svg { width: 14px; height: 14px; }
+.composer-send:disabled { opacity: 0.3; cursor: default; }
+.composer-send:not(:disabled):hover { transform: translateY(-1px); }
+
+/* ------------------------------------------------------------ the palette */
+
+.palette-back {
+  position: fixed; inset: 0; z-index: 92;
+  background: var(--overlay);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: min(14vh, 130px) 20px 20px;
+  animation: fadeIn 0.14s ease both;
+}
+.palette {
+  width: 100%; max-width: 580px;
+  border-radius: 16px; border: 1px solid var(--line-strong);
+  background: var(--panel); box-shadow: var(--shadow-pop);
+  overflow: hidden; animation: rise 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.palette-top {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 14px; border-bottom: 1px solid var(--line);
+}
+.palette-top > svg { width: 16px; height: 16px; color: var(--ink-3); flex: none; }
+.palette-top kbd {
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 600; line-height: 1.6;
+  padding: 2px 7px; border-radius: 6px; background: var(--panel-2); color: var(--ink-3); flex: none;
+}
+.palette-input {
+  flex: 1; min-width: 0; border: 0; background: none;
+  font-family: var(--font-ui); font-size: 15px; color: var(--ink); line-height: 1.55;
+}
+.palette-input:focus { outline: none; }
+.palette-input::placeholder { color: var(--ink-3); }
+
+.palette-list { max-height: min(48vh, 400px); overflow-y: auto; padding: 6px; }
+.palette-group {
+  padding: 11px 9px 5px;
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6;
+}
+.palette-item {
+  position: relative; width: 100%; text-align: left;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border: 0; border-radius: 9px; background: none; cursor: pointer;
+  font-family: var(--font-ui); font-size: 13.5px; color: var(--ink); line-height: 1.55;
+}
+.palette-item > svg { width: 15px; height: 15px; color: var(--ink-3); flex: none; }
+.palette-item .p-dim { color: var(--ink-3); font-size: 12.5px; }
+.palette-item .p-key {
+  margin-left: auto; font-family: var(--font-ui); font-size: 10.5px; font-weight: 600;
+  padding: 2px 6px; border-radius: 5px; background: var(--panel-2); color: var(--ink-3); line-height: 1.6;
+}
+.palette-item.on { background: var(--panel-2); }
+.palette-item.on::before {
+  content: ""; position: absolute; left: 0; top: 7px; bottom: 7px;
+  width: 2.5px; border-radius: 2px; background: var(--accent);
+}
+.palette-item.on > svg { color: var(--accent-text); }
+.palette-empty { padding: 26px 12px; text-align: center; font-size: 13px; color: var(--ink-3); line-height: 1.7; }
+
+.palette-foot {
+  display: flex; align-items: center; gap: 16px;
+  padding: 9px 14px; border-top: 1px solid var(--line); background: var(--panel-2);
+  font-size: 11px; color: var(--ink-3); line-height: 1.6;
+}
+.palette-foot kbd {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+  padding: 1px 5px; border-radius: 4px; background: var(--panel); color: var(--ink-3);
+  margin-right: 3px;
+}
+.palette-count { margin-left: auto; }
+
+/* ------------------------------------------------------------ responsive */
+
+@media (max-width: 1240px) {
+  .app-body { grid-template-columns: 254px minmax(0, 1fr) 332px; column-gap: 8px; padding-inline: 9px; }
+  .app-body.no-rail { grid-template-columns: minmax(0, 1fr) 332px; }
+  .doc-scroll { padding: 38px 0 84px; }
+  .doc { padding-inline: 30px; }
+}
+@media (max-width: 1080px) {
+  .app-body { grid-template-columns: 236px minmax(0, 1fr) 314px; }
+  .app-body.no-rail { grid-template-columns: minmax(0, 1fr) 314px; }
+}
+@media (max-width: 900px) {
+  .app-body, .app-body.no-rail {
+    display: block; padding: 4px 10px 10px; background: var(--ground);
+  }
+  .rail, .pane-doc, .side { margin-bottom: 10px; border-radius: 14px; }
+  .pane-doc { position: relative; }
+  .doc-scroll { padding: 24px 0 20px; }
+  .doc { padding-inline: 20px; }
+  .doc-status { position: static; backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--panel); }
+  .cov-strip { display: none; }
+  .cov-tiles { grid-template-columns: 1fr 1fr; }
+  .app-bar { background: var(--ground); }
+  .palette-back { padding-top: 8vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cov-band, .composer-send, .palette, .palette-back { animation: none; transition: none; }
+  .ask-dots i { animation: none; opacity: 0.6; }
+}
+
+
+/* --- one vertical indicator, not two --------------------------------------
+   The coverage map carries its own viewport thumb, so while it is up the
+   native scrollbar beside it is a second stripe saying the same thing in a
+   different language. It comes back the moment the map goes away. */
+.pane-doc.has-map .doc-scroll { scrollbar-width: none; }
+.pane-doc.has-map .doc-scroll::-webkit-scrollbar { width: 0; height: 0; }
+.pane-doc.has-map .doc-scroll { padding-right: 22px; }
+
+
+/* --- reserve the scrollbar so measuring cannot chase its own tail ---------
+   Auto-growing a textarea means collapsing it to measure the content. In a
+   scrolling rail that removes the scrollbar, which widens the column, which
+   changes how many lines the text needs - so the measurement and the layout
+   disagreed and the last line was cut off. Reserving the gutter makes the
+   width constant whether the bar is there or not. */
+.rail-scroll, .side-scroll, .doc-scroll { scrollbar-gutter: stable; }
+
+
+/* --- the Where panel, explained ------------------------------------------
+   It showed four bars and four coordinates and never said what the bars were
+   or why anyone should care. A reading that ends in a fact about position is
+   only half an observation; the panel now leads with the one sentence a
+   teacher would say, then tells you what the bars are before it draws any. */
+
+.cov-head {
+  padding: 14px 15px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--panel-2);
+}
+.cov-head-label {
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6;
+}
+.cov-head > p + p { margin-top: 7px; font-size: 15px; line-height: 1.55; color: var(--ink); font-weight: 500; }
+.cov-head.t-watch { border-left: 3px solid var(--mid); }
+.cov-head.t-good { border-left: 3px solid var(--ok); }
+
+.cov-lede { margin: -4px 0 12px; font-size: 12.5px; line-height: 1.65; color: var(--ink-3); }
+.cov-lede b { color: var(--ink-2); font-weight: 600; }
+
+/* One axis for every bar under it, rather than a caption stranded at the very
+   bottom of the panel where it explains nothing on the way past. */
+.cov-axis {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  font-size: 10.5px; color: var(--ink-3); line-height: 1.6;
+}
+.cov-axis i { flex: 1; height: 1px; background: var(--line-strong); }
+
+.cov-row {
+  display: block; width: 100%; text-align: left;
+  padding: 11px 10px; border: 0; border-radius: 11px; background: none; cursor: pointer;
+  font: inherit; color: inherit;
+  transition: background 0.16s ease;
+}
+.cov-row:hover { background: var(--panel-2); }
+.cov-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cov-row-top { display: flex; align-items: baseline; gap: 8px; }
+.cov-hits { font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+
+/* The reading, with a mark in front so the panel can be skimmed for the rows
+   that need attention rather than read top to bottom. */
+.cov-say {
+  display: block; position: relative; padding-left: 18px;
+  margin-top: 8px; font-size: 12.5px; line-height: 1.6; color: var(--ink-2);
+}
+.cov-say::before {
+  position: absolute; left: 0; top: 0;
+  font-size: 12px; font-weight: 700; line-height: 1.65;
+}
+.cov-row.t-good .cov-say::before { content: "\2713"; color: var(--ok); }
+.cov-row.t-ok .cov-say::before { content: "\2022"; color: var(--ink-3); }
+.cov-row.t-watch .cov-say::before { content: "!"; color: var(--mid); }
+.cov-row.t-flat .cov-say::before { content: "\2014"; color: var(--none); }
+
+
+/* ==========================================================================
+   THE SHELF, CLASSROOM, AND THE FULLER ACCOUNT PANEL
+   ========================================================================== */
+
+/* --- the document switcher ------------------------------------------------
+   Craft and Notion both hang this off the title, because that is the only
+   place a person looks for "the other ones". */
+.shelf-btn {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  padding: 6px 8px 6px 10px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel);
+  font-family: var(--font-ui); font-size: 12.5px; font-weight: 500;
+  color: var(--ink-3); line-height: 1.55; cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.shelf-btn svg { width: 13px; height: 13px; flex: none; }
+.shelf-btn .shelf-chev { width: 11px; height: 11px; opacity: 0.7; }
+.shelf-btn:hover { border-color: var(--line-strong); color: var(--ink-2); }
+.shelf-btn.has-some { color: var(--ink-2); }
+.shelf-btn.has-some > svg:first-child { color: var(--accent); }
+.shelf-btn[aria-expanded="true"] { border-color: var(--line-strong); color: var(--ink); background: var(--panel-2); }
+@media (max-width: 1180px) { .shelf-btn span { display: none; } .shelf-btn { padding: 6px 7px; } }
+
+.shelf-sheet {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 60;
+  width: 320px; max-width: calc(100vw - 32px); padding: 6px;
+  border-radius: 14px; border: 1px solid var(--line);
+  background: var(--panel); box-shadow: var(--shadow-pop);
+  animation: rise 0.18s ease both;
+}
+.shelf-head, .shelf-none {
+  padding: 9px 10px 7px;
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6;
+}
+.shelf-none { text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 400; line-height: 1.6; padding-bottom: 12px; }
+.shelf-list { max-height: 300px; overflow-y: auto; scrollbar-gutter: stable; }
+.shelf-row { display: flex; align-items: stretch; border-radius: 9px; }
+.shelf-row:hover { background: var(--panel-2); }
+.shelf-row.on { background: var(--panel-2); }
+.shelf-row.on .shelf-open b { color: var(--accent-text); }
+.shelf-open {
+  flex: 1; min-width: 0; text-align: left; border: 0; background: none; cursor: pointer;
+  padding: 8px 4px 8px 10px; display: grid; gap: 1px;
+}
+.shelf-open b {
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.45;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shelf-open span { font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+.shelf-del {
+  width: 32px; flex: none; display: grid; place-items: center;
+  border: 0; background: none; border-radius: 9px; cursor: pointer;
+  color: var(--ink-3); opacity: 0; transition: opacity 0.15s ease, color 0.15s ease;
+}
+.shelf-del svg { width: 13px; height: 13px; }
+.shelf-row:hover .shelf-del, .shelf-del:focus-visible { opacity: 1; }
+.shelf-del:hover { color: var(--accent); }
+.shelf-foot { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; display: grid; gap: 1px; }
+.shelf-foot button {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 9px 10px; border: 0; border-radius: 9px; background: none; cursor: pointer;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 500; color: var(--ink-2); line-height: 1.5;
+}
+.shelf-foot button svg { width: 13px; height: 13px; flex: none; color: var(--ink-3); }
+.shelf-foot button:hover { background: var(--panel-2); color: var(--ink); }
+@media (hover: none) { .shelf-del { opacity: 1; } }
+
+/* --- the Classroom wizard ------------------------------------------------- */
+
+.gc-list { display: grid; gap: 3px; margin-top: 14px; max-height: 46vh; overflow-y: auto; scrollbar-gutter: stable; }
+.gc-list > button, .gc-subs > label {
+  display: block; width: 100%; text-align: left;
+  padding: 11px 12px; border-radius: 11px; border: 1px solid var(--line);
+  background: var(--panel); cursor: pointer;
+  font: inherit; color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.gc-list > button:hover, .gc-subs > label:hover { border-color: var(--line-strong); background: var(--panel-2); }
+.gc-list b { display: block; font-family: var(--font-ui); font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.gc-list span { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.gc-subs > label { display: grid; grid-template-columns: 18px 1fr; column-gap: 10px; align-items: center; }
+.gc-subs input { grid-row: span 2; width: 15px; height: 15px; accent-color: var(--accent); }
+.gc-none { padding: 20px 4px; font-size: 13px; color: var(--ink-3); line-height: 1.7; }
+.gc-use {
+  display: flex; align-items: center; gap: 9px; margin-top: 14px;
+  padding: 11px 12px; border-radius: 11px; border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  font-size: 13px; color: var(--ink); line-height: 1.5; cursor: pointer;
+}
+.gc-use input { width: 15px; height: 15px; flex: none; accent-color: var(--accent); }
+.gc-note { margin-top: 12px; font-size: 12.5px; color: var(--ink-3); line-height: 1.65; }
+
+/* --- account: saved work + classroom -------------------------------------- */
+
+.ac-meter { padding: 13px 14px; border-radius: 12px; background: var(--panel-2); margin-bottom: 6px; }
+.ac-meter-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.ac-meter-top b { font-size: 14px; font-weight: 600; line-height: 1.5; }
+.ac-meter-top span { font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+.ac-meter .bar { margin-top: 10px; }
+
+.ac-work { display: grid; gap: 1px; margin: 6px 0; }
+.ac-work-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 4px; border-bottom: 1px solid var(--line);
+}
+.ac-work-row:last-child { border-bottom: 0; }
+.ac-work-row b { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.45; }
+.ac-work-row span { display: block; margin-top: 2px; font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+.ac-more, .ac-none { padding: 8px 4px; font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
+.ac-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+  padding: 1px 5px; border-radius: 5px; background: var(--panel-2); color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* The account modal grew from three tabs to five, so it needs the room. */
+.ac { min-height: 420px; }
+@media (max-width: 640px) { .ac { min-height: 0; } }
+
+
+/* The account modal went from three tabs to five and holds a list of saved
+   work; 520px was sized for a form. */
+.modal:has(.ac) { max-width: 720px; }
+.modal:has(#gc-body) { max-width: 560px; }
+
+
+/* --- the switcher cannot hang off the side of a phone ---------------------
+   Anchored to a button that sits wherever the wrapped bar puts it, a 320px
+   sheet leaves the viewport. Below the stack breakpoint it becomes a bottom
+   sheet, which cannot. */
+@media (max-width: 900px) {
+  .shelf-sheet {
+    position: fixed; left: 8px; right: 8px; bottom: 8px;
+    top: auto; width: auto; max-width: none;
+    border-radius: 16px; z-index: 80;
+  }
+  .shelf-list { max-height: 46vh; }
+}
+
+
+/* ==========================================================================
+   v4 - a grouped bar, a real composer, the feedback sheet
+   ========================================================================== */
+
+/* ------------------------------------------------------------- the bar */
+
+/* Three groups with air between them, rather than eight controls in a row
+   and a void in the middle where the eye has nothing to hold on to. */
+.app-bar { justify-content: space-between; gap: 16px; }
+.bar-doc, .bar-do { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bar-doc { flex: 1 1 auto; }
+.bar-do { flex: 0 0 auto; }
+.app-bar-spacer { display: none; }
+.bar-sep {
+  width: 1px; height: 20px; flex: none;
+  background: var(--line-strong); opacity: 0.55; margin: 0 2px;
+}
+
+/* One pill for both readers, and it opens the setting it describes. */
+.reader-pill {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel);
+  font-family: var(--font-ui); font-size: 12.5px; font-weight: 500;
+  color: var(--ink-2); line-height: 1.55; cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.reader-pill:hover { border-color: var(--line-strong); color: var(--ink); }
+.reader-pill .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--none); }
+.reader-pill.live .dot { background: var(--ok); }
+.reader-pill.live { color: var(--ink); }
+.reader-pill.warn .dot { background: var(--mid); }
+.reader-pill.busy .dot { background: var(--accent); animation: blip 1.1s ease-in-out infinite; }
+.reader-pill.busy { color: var(--ink); }
+
+@media (max-width: 1320px) { .bar-sep { display: none; } }
+@media (max-width: 1180px) { .reader-pill span { display: none; } .reader-pill { padding: 6px 9px; } }
+
+/* ---------------------------------------------------------- the composer */
+
+/* Base44 and Pinterest both keep it as one rounded field with the send inside
+   it. The old version stacked a toolbar row underneath, which on a narrow
+   panel pushed the whole thing past the bottom edge. */
+.ask-ctx {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 0 4px 8px;
+  font-size: 11.5px; color: var(--ink-3); line-height: 1.6;
+}
+.ask-src {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  padding: 3px 9px; border-radius: 999px; background: var(--panel-2);
+  font-size: 11px; font-weight: 600; color: var(--ink-2); line-height: 1.6;
+}
+.ask-src .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); flex: none; }
+.ask-src.is-off .dot { background: var(--none); }
+@media (max-width: 1240px) { .ask-ctx-note { display: none; } }
+
+.composer {
+  position: relative; display: block;
+  padding: 10px 44px 10px 14px;
+  border-radius: 20px; border: 1px solid var(--line);
+  background: var(--panel-2);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.composer:focus-within {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.composer-input {
+  display: block; width: 100%; max-height: 132px; min-height: 22px;
+  border: 0; background: none; resize: none; overflow-y: auto;
+  font-family: var(--font-ui); font-size: 13.5px; color: var(--ink);
+  line-height: 1.6; padding: 0;
+}
+.composer-input:focus { outline: none; }
+.composer-input::placeholder { color: var(--ink-3); }
+.composer-send {
+  position: absolute; right: 7px; bottom: 7px;
+  width: 28px; height: 28px;
+  display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: var(--cta-bg); color: var(--cta-ink); cursor: pointer;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+.composer-send svg { width: 13px; height: 13px; }
+.composer-send:disabled { opacity: 0.25; cursor: default; }
+.composer-send:not(:disabled):hover { transform: scale(1.06); }
+
+/* The chips are a starting shove, not a menu - short enough for two tidy
+   rows in a 370px panel. */
+.ask-chips { padding: 0 0 10px; gap: 5px; }
+.ask-chips button { font-size: 12px; padding: 6px 11px; }
+
+/* Nothing in this column may push the composer off the bottom. */
+.side-panel, .ask { min-height: 0; }
+.ask-log { flex: 1 1 auto; min-height: 0; }
+.ask-foot { flex: 0 0 auto; }
+
+/* --------------------------------------------------------- the feedback */
+
+.fb { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.fb-head { flex: none; padding: 14px 15px 10px; }
+.fb-switch { display: flex; gap: 2px; padding: 2px; border-radius: 10px; background: var(--panel-2); }
+.fb-switch button {
+  flex: 1; padding: 7px 10px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  font-family: var(--font-ui); font-size: 12.5px; font-weight: 500;
+  color: var(--ink-3); line-height: 1.55;
+}
+.fb-switch button[aria-pressed="true"] {
+  background: var(--panel); color: var(--ink); box-shadow: var(--shadow-card);
+}
+.fb-body { flex: 1; min-height: 0; display: flex; padding: 0 15px; overflow-y: auto; }
+.fb-body .empty { padding: 8px 0 20px; }
+
+/* A page of writing, not a form field: the same serif the essay is set in, so
+   the teacher is reading it the way the student will. */
+.fb-text {
+  flex: 1; width: 100%; min-height: 100%; resize: none;
+  border: 0; background: none; padding: 4px 0 20px;
+  font-family: var(--font-serif); font-size: 14.5px; line-height: 1.72;
+  color: var(--ink); white-space: pre-wrap;
+}
+.fb-text:focus { outline: none; }
+.fb-foot {
+  flex: none; display: flex; align-items: center; gap: 12px;
+  padding: 11px 15px; border-top: 1px solid var(--line); background: var(--panel);
+}
+.fb-foot .link-quiet { margin-right: auto; font-size: 12.5px; }
+.fb-foot .btn { padding: 8px 18px; }
+
+/* --------------------------------------- where it sits, on the finding */
+
+.finding-where {
+  position: relative; margin-top: 14px; padding-left: 17px;
+  font-size: 12.5px; line-height: 1.6; color: var(--ink-2);
+}
+.finding-where::before {
+  position: absolute; left: 0; top: 0; font-size: 12px; font-weight: 700; line-height: 1.6;
+}
+.finding-where.t-good::before { content: "✓"; color: var(--ok); }
+.finding-where.t-watch::before { content: "!"; color: var(--mid); }
+.finding-where.t-ok::before { content: "•"; color: var(--ink-3); }
+.finding-where.t-flat::before { content: "—"; color: var(--none); }
+
+/* --------------------------------------------------------- responsive */
+
+@media (max-width: 900px) {
+  .app-bar { flex-wrap: wrap; row-gap: 8px; }
+  .bar-doc { flex: 1 1 100%; order: 1; }
+  .bar-do { flex: 1 1 100%; order: 2; justify-content: flex-end; }
+  .bar-do .kbar { margin-right: auto; }
+  .fb-body { padding-inline: 14px; }
+  .fb-text { min-height: 220px; }
+}
+
+
+/* --- feedback: one scroll region, and the action on the right ------------
+   The pane and the textarea were both scrolling, so a long sheet had two bars
+   side by side and the wheel picked whichever it felt like. */
+.fb-body { overflow: hidden; padding-bottom: 0; }
+.fb-text {
+  height: 100%; min-height: 0; overflow-y: auto;
+  scrollbar-gutter: stable; padding-right: 4px;
+}
+.fb-foot { justify-content: flex-end; }
+.fb-foot .link-quiet[hidden] { display: none; }
+
+
+/* --- feedback on a phone --------------------------------------------------
+   Stacked, the panel has no height of its own to fill, so height:100% left the
+   sheet 74px tall. On a page that scrolls as one, it should just be as long as
+   it needs to be. */
+@media (max-width: 900px) {
+  .fb-body { overflow: visible; }
+  .fb-text {
+    height: auto; min-height: 340px; overflow: hidden;
+    padding-bottom: 16px; scrollbar-gutter: auto;
+  }
+}
+
+
+/* ==========================================================================
+   v5 - the switcher moves into the rail, the footer goes away
+   ========================================================================== */
+
+/* The app now runs to the bottom of the window. The footer held one line of
+   fine print and a button that duplicated the Feedback tab; the line moved to
+   the foot of the rail, where it is still always on screen. */
+.app-body { padding-bottom: 12px; }
+
+/* Craft, Notion and Linear all put the open document and the way to the others
+   at the top of the sidebar. In the bar it was a stray pill with a chevron. */
+.rail-top { flex: none; padding: 10px 10px 0; }
+.essay-btn {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) 14px;
+  align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 9px 10px; border-radius: 11px;
+  border: 1px solid var(--line); background: var(--panel-2);
+  cursor: pointer; font: inherit; color: inherit;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.essay-btn:hover { border-color: var(--line-strong); }
+.essay-btn[aria-expanded="true"] { border-color: var(--line-strong); background: var(--panel); }
+.essay-icon { width: 26px; height: 26px; padding: 6px; border-radius: 8px; background: var(--panel); color: var(--accent); }
+.essay-lines { min-width: 0; display: grid; gap: 1px; }
+.essay-lines b {
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.45;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.essay-lines span { font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+.essay-btn .shelf-chev { width: 13px; height: 13px; color: var(--ink-3); }
+
+/* The sheet drops under the control and matches its width. */
+.shelf-sheet { width: 100%; min-width: 268px; left: 0; right: auto; }
+
+/* The promise the whole product rests on, kept where it is always in view. */
+.rail-foot { display: grid; gap: 9px; }
+.rail-foot .link-quiet { justify-self: start; }
+.rail-foot .fine { font-size: 11px; color: var(--ink-3); line-height: 1.6; }
+
+@media (max-width: 900px) {
+  .app-body { padding-bottom: 10px; }
+  .rail-top { padding: 10px 10px 0; }
+}
+
+
+/* ==========================================================================
+   v6 - the feedback sheet reads as a document, not as a text field
+   ========================================================================== */
+
+.fb-head { padding-bottom: 8px; }
+.fb-tools {
+  display: flex; align-items: center; gap: 10px; margin-top: 9px;
+}
+.fb-hint { font-size: 11px; color: var(--ink-3); line-height: 1.6; }
+.fb-view { margin-left: auto; display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: var(--panel-2); }
+.fb-view button {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border: 0; border-radius: 7px; background: none; cursor: pointer;
+  font-family: var(--font-ui); font-size: 11.5px; font-weight: 500;
+  color: var(--ink-3); line-height: 1.6;
+}
+.fb-view button svg { width: 11px; height: 11px; }
+.fb-view button[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow-card); }
+@media (max-width: 1240px) { .fb-hint { display: none; } .fb-view { margin-left: 0; } }
+
+/* The edit half is monospace, because you are looking at syntax there and the
+   asterisks need to line up. The read half is the serif the essay is set in. */
+.fb-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px; line-height: 1.75;
+}
+
+.fb-read {
+  flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable;
+  padding: 2px 4px 22px 0;
+}
+
+/* ------------------------------------------------------- rendered markdown */
+
+.md { font-family: var(--font-serif); font-size: 14.5px; line-height: 1.72; color: var(--ink); }
+.md > :first-child { margin-top: 0; }
+.md h2 {
+  margin: 0 0 4px; font-family: var(--font-ui);
+  font-size: 19px; font-weight: 700; line-height: 1.3; letter-spacing: -0.02em;
+}
+.md h3 {
+  margin: 22px 0 0; font-family: var(--font-ui);
+  font-size: 14.5px; font-weight: 700; line-height: 1.4;
+}
+.md h4 {
+  margin: 18px 0 0; font-family: var(--font-ui);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); line-height: 1.6;
+}
+.md p { margin-top: 9px; }
+.md strong { font-weight: 700; }
+.md em { font-style: italic; }
+.md hr { margin: 20px 0; border: 0; border-top: 1px solid var(--line); }
+.md ul, .md ol { margin: 9px 0 0; padding-left: 20px; }
+.md li { margin-top: 4px; }
+.md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em;
+  padding: 1px 5px; border-radius: 5px; background: var(--panel-2);
+}
+
+/* The quote is the load-bearing part of a piece of feedback: it is the line
+   from the student's own essay that the comment is about. */
+.md blockquote {
+  margin: 9px 0 0; padding: 2px 0 2px 13px;
+  border-left: 2.5px solid var(--accent);
+  color: var(--ink-2); font-style: italic;
+}
+
+.md-table { margin-top: 12px; overflow-x: auto; }
+.md table { width: 100%; border-collapse: collapse; font-family: var(--font-ui); font-size: 12.5px; }
+.md th, .md td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line); line-height: 1.5; }
+.md th {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--ink-3); border-bottom-color: var(--line-strong);
+}
+.md tbody tr:last-child td { border-bottom: 0; }
+
+/* --------------------------------------------------------------- the maths */
+
+.minline { display: inline-flex; align-items: center; vertical-align: -0.18em; }
+.mblock {
+  display: flex; justify-content: center; align-items: center;
+  margin: 14px 0; padding: 12px 10px;
+  border-radius: 10px; background: var(--panel-2);
+  font-size: 16px;
+}
+.minline, .mblock { font-family: var(--font-serif); }
+.mvar { font-style: italic; padding-right: 0.5px; }
+.mtext { font-family: var(--font-ui); font-size: 0.92em; font-style: normal; padding: 0 1px; }
+.mop { padding: 0 0.22em; }
+
+/* A fraction is a column with a rule between the halves - the only honest way
+   to draw one without a maths font. */
+.mfrac {
+  display: inline-flex; flex-direction: column; align-items: center;
+  vertical-align: -0.52em; margin: 0 0.16em; font-size: 0.94em; line-height: 1.15;
+}
+.mfrac .mnum { padding: 0 0.3em 1px; }
+.mfrac .mden { padding: 1px 0.3em 0; border-top: 1px solid currentColor; }
+
+.msqrt { display: inline-flex; align-items: stretch; margin: 0 0.1em; }
+.msqrt .mrad { font-size: 1.08em; line-height: 1; }
+.msqrt .mroot { border-top: 1px solid currentColor; padding: 1px 0.22em 0 0.1em; }
+
+.minline sup, .mblock sup, .minline sub, .mblock sub { font-size: 0.72em; line-height: 0; }
+
+@media (max-width: 900px) {
+  .fb-read { overflow: visible; padding-bottom: 16px; }
+  .fb-tools { margin-top: 8px; }
+}
+
+
+/* ==========================================================================
+   THE MENU, AND THE FOUR CLOSER LOOKS
+   ========================================================================== */
+
+/* --- the menu: grouped, and every row carries its icon ------------------- */
+
+.more-sheet { min-width: 268px; padding: 6px 6px 8px; }
+.more-group {
+  padding: 10px 10px 5px;
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6;
+}
+.more-rule { margin: 6px 8px; border: 0; border-top: 1px solid var(--line); }
+.more-sheet button {
+  display: grid; grid-template-columns: 16px 1fr auto; align-items: center;
+  gap: 10px; width: 100%; text-align: left;
+  padding: 8px 10px;
+}
+.more-sheet button > svg { width: 14px; height: 14px; color: var(--ink-3); }
+.more-sheet button:hover > svg { color: var(--accent); }
+.more-hint {
+  grid-column: 2 / -1; margin-top: 1px;
+  font-size: 11.5px; color: var(--ink-3); line-height: 1.5;
+}
+.more-sheet kbd {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600; line-height: 1.6;
+  padding: 2px 6px; border-radius: 5px; background: var(--panel-2); color: var(--ink-3);
+}
+
+/* --- a closer look ------------------------------------------------------- */
+
+.ins-tabs { display: flex; gap: 2px; margin: 16px 0 4px; padding: 2px; border-radius: 10px; background: var(--panel-2); }
+.ins-tabs button {
+  flex: 1; padding: 8px 10px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--ink-3); line-height: 1.55;
+}
+.ins-tabs button[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow-card); }
+
+.ins-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.ins-row:last-child { border-bottom: 0; }
+.ins-row b { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.45; }
+.ins-row span { display: block; margin-top: 3px; font-size: 12.5px; color: var(--ink-2); line-height: 1.6; }
+.ins-val { font-family: var(--font-ui); font-weight: 600; color: var(--ink) !important; }
+.ins-note { margin-top: 6px; font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+/* A row whose number sits where people expect "generated" to sit. Marked, not
+   accused: the tint says look here, the note underneath says why that is not
+   the same as a conclusion. */
+.ins-row.is-flat { border-left: 2.5px solid var(--mid); padding-left: 11px; }
+
+.ins-quote {
+  margin-top: 8px; padding: 10px 12px; border-radius: 10px;
+  background: var(--panel-2);
+}
+.ins-quote b { font-family: var(--font-ui); font-size: 11px; font-weight: 600; color: var(--ink-3); }
+.ins-quote p { margin-top: 4px; font-family: var(--font-serif); font-size: 14px; line-height: 1.65; }
+.ins-quote.add { box-shadow: inset 2.5px 0 0 var(--ok); }
+.ins-quote.cut { box-shadow: inset 2.5px 0 0 var(--none); }
+.ins-quote.cut p { color: var(--ink-3); text-decoration: line-through; text-decoration-thickness: 1px; }
+
+/* The disclaimer is the feature, so it is not small print. */
+.ins-warn {
+  margin: 16px 0 6px; padding: 13px 14px; border-radius: 12px;
+  border: 1px solid var(--line); border-left: 3px solid var(--mid);
+  background: var(--panel-2);
+}
+.ins-warn b { display: block; font-size: 13.5px; font-weight: 700; line-height: 1.45; }
+.ins-warn p { margin-top: 6px; font-size: 12.5px; line-height: 1.65; color: var(--ink-2); }
+.ins-warn.is-do { border-left-color: var(--ok); margin-top: 18px; }
+
+/* --- across the set ------------------------------------------------------ */
+
+.cls-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.cls-row:last-of-type { border-bottom: 0; }
+.cls-row .bar { margin-top: 9px; }
+.cls-legend { margin-top: 7px; font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+
+.cmp-band {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 9px 11px; margin-top: 6px; border-radius: 10px; background: var(--panel-2);
+}
+.cmp-band b { font-size: 13px; font-weight: 600; }
+.cmp-band span { font-family: var(--font-ui); font-size: 12px; margin-left: auto; }
+.cmp-band.up { box-shadow: inset 2.5px 0 0 var(--ok); }
+.cmp-band.up span { color: var(--ok); }
+.cmp-band.down { box-shadow: inset 2.5px 0 0 var(--mid); }
+.cmp-band.down span { color: var(--mid); }
+
+/* Answers in the Ask tab are Markdown now, so they need the type back. */
+.ask-md { font-size: 13.5px; line-height: 1.65; }
+.ask-md h2, .ask-md h3 { font-size: 14px; margin-top: 10px; }
+.ask-md p { margin-top: 7px; }
+.ask-md > :first-child { margin-top: 0; }
+.ask-md ul, .ask-md ol { margin-top: 7px; padding-left: 18px; }
+.ask-md blockquote { margin-top: 7px; font-size: 13px; }
+
+
+/* The dialogs animate in; nothing here should move for somebody who asked for
+   less motion. The old rule named .askdock-panel, which no longer exists. */
+@media (prefers-reduced-motion: reduce) {
+  .modal, .modal-back, .more-sheet, .shelf-sheet, .palette, .palette-back {
+    animation: none;
+  }
+}
+
+
+/* --- restored: the starting actions, and the composer's shortcut hint ------
+   These three went out with the dead ask-dock block during a cleanup; they
+   were appended after it and fell inside the same range. Without them the
+   action rows rendered as giant stacked icons. */
+
+.empty-do { display: grid; gap: 6px; margin-top: 18px; }
+.empty-do button {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 11px 13px; border-radius: 11px;
+  border: 1px solid var(--line); background: var(--panel);
+  font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+  color: var(--ink-2); line-height: 1.5; cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+/* The size has to be pinned here: an inline <svg> with only a viewBox falls
+   back to 300x150, which is what made these fill the panel. */
+.empty-do button svg {
+  width: 15px; height: 15px; flex: none; color: var(--ink-3);
+}
+.empty-do button:hover {
+  border-color: var(--line-strong); background: var(--panel-2); color: var(--ink);
+}
+.empty-do button:hover svg { color: var(--accent); }
+.empty-fine { margin-top: 14px; font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+
+.composer-key {
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 600; line-height: 1.6;
+  padding: 2px 7px; border-radius: 6px; background: var(--panel-2); color: var(--ink-3);
+  white-space: nowrap;
+}
+.composer-key.has-chat { background: var(--accent-soft); color: var(--accent-text); }
+
+/* Nothing else in the app should be able to hit this again. */
+svg:not([width]):not([height]) { max-width: 100%; }
+
+
+/* --- no icon may size itself ever again -----------------------------------
+   An inline <svg> carrying only a viewBox has no intrinsic size, so it falls
+   back to the CSS default of 300x150 and fills whatever holds it. That is what
+   turned the sparkle in the composer and the icons on the start buttons into
+   full-width graphics when their sizing rules went missing.
+
+   :where() contributes nothing to specificity, so this is a floor: every rule
+   in this file still wins, and anything that has no rule lands here instead of
+   at 300x150. */
+:where(#view-app, .modal, .more-sheet, .palette, .shelf-sheet) svg {
+  width: 15px; height: 15px; flex: none;
+}
+
+.composer-spark { width: 15px; height: 15px; color: var(--accent); }
+
+.ask-head {
+  flex: none; display: flex; align-items: center; gap: 10px;
+  padding: 13px 15px 10px;
+}
+.ask-head .link-quiet { margin-left: auto; font-size: 12px; }
+
+
+/* ==========================================================================
+   ASK, SPLIT IN TWO  (restored)
+
+   The composer stays under the essay - one line, where the thing it asks
+   about is. The answers live in the side column beside Evidence and Feedback,
+   because a card expanding over the document covered the paragraph you were
+   asking about.
+   ========================================================================== */
+
+.askdock {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: 52px; z-index: 6;
+  width: min(640px, calc(100% - 44px));
+}
+.askdock .composer {
+  display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto;
+  align-items: center; gap: 9px;
+  padding: 9px 9px 9px 14px; border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.09), 0 0 0 1px var(--line);
+}
+:root[data-theme="dark"] .askdock .composer {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+.askdock .composer:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.1), 0 0 0 3px var(--accent-soft);
+}
+.askdock .composer-input {
+  max-height: 108px; padding: 2px 0; min-height: 22px;
+  border: 0; background: none; resize: none; overflow-y: auto;
+  font-family: var(--font-ui); font-size: 13.5px; color: var(--ink); line-height: 1.55;
+}
+.askdock .composer-input:focus { outline: none; }
+.askdock .composer-input::placeholder { color: var(--ink-3); }
+.askdock .composer-send {
+  position: static; width: 28px; height: 28px;
+  display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: var(--cta-bg); color: var(--cta-ink); cursor: pointer;
+}
+.askdock .composer-send:disabled { opacity: 0.25; cursor: default; }
+
+/* --- the conversation, in the side column -------------------------------- */
+
+.side-panel .ask { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.side-panel .ask-log {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-gutter: stable;
+  padding: 4px 15px 8px; display: grid; gap: 14px; align-content: start;
+}
+.side-panel .ask-log:empty::before {
+  content: "Ask about this essay. Every answer is built from lines that are actually in it — and it will not give you a mark.";
+  display: block; max-width: 34ch;
+  font-size: 13px; line-height: 1.7; color: var(--ink-3);
+}
+.side-panel .ask-chips {
+  flex: none; display: flex; flex-wrap: wrap; gap: 5px;
+  padding: 10px 15px 15px; border-top: 1px solid var(--line);
+}
+.side-panel .ask-chips button {
+  font-size: 12px; padding: 6px 11px;
+  background: var(--panel-2); border-color: transparent;
+}
+.side-panel .ask-chips button:hover { border-color: var(--line-strong); }
+
+@media (max-width: 900px) {
+  .askdock { position: static; transform: none; width: auto; margin: 0 14px 14px; }
+  .askdock .composer { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--panel-2); }
+  .side-panel .ask-log { max-height: none; overflow: visible; }
+}
+
+/* ==========================================================================
+   SIX TABS
+
+   Three dialogs became panels. They were behind the overflow menu, which is
+   where things go to not be found, and each had to carry its own focus trap
+   and close button to be a dialog at all. The strip scrolls sideways rather
+   than wrapping: a second row of tabs moves the content down the page every
+   time one is added.
+   ========================================================================== */
+
+.side-tabs {
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; flex-wrap: nowrap;
+}
+.side-tabs::-webkit-scrollbar { height: 0; }
+.side-tabs button { flex: none; white-space: nowrap; padding-inline: 11px; }
+
+.drafts-top {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
+  font-size: 12.5px; color: var(--ink-3); line-height: 1.6;
+}
+.drafts-top b { color: var(--ink); font-weight: 600; }
+.drafts-top .link-quiet { margin-left: auto; font-size: 12px; }
+
+.ins-tabs { margin-bottom: 14px; }
+
+
+/* ==========================================================================
+   WIDE SCREENS  (restored, and pushed further)
+
+   The essay is set to a readable measure and centred, which is right. What was
+   wrong is what happened around it: on a 2000px display the middle column kept
+   growing, so the measure floated in the centre of it with a few hundred
+   pixels of nothing on either side while the checklist and the findings were
+   squeezed against the edges.
+
+   Capping the shell and centring it was the wrong answer - that only moved the
+   emptiness out to the margins. The side columns take the room instead. Both
+   have more to show on a big display than a small one, so the space goes
+   somewhere it is used, and the essay ends up next to the things that are
+   about it.
+   ========================================================================== */
+
+@media (min-width: 1500px) {
+  .app-body {
+    grid-template-columns:
+      clamp(288px, 25vw, 600px)
+      minmax(0, 1fr)
+      clamp(376px, 32vw, 760px);
+  }
+  .app-body.no-rail { grid-template-columns: minmax(0, 1fr) clamp(376px, 32vw, 760px); }
+  /* A wider display can carry a slightly longer line without hurting it. */
+  .doc, .doc-start { width: min(72ch, 100%); }
+  .doc-scroll { padding-inline: 24px; }
+}
+
+
+/* ==========================================================================
+   COLOUR
+
+   Every photograph was going through grayscale(1) - one duotone so images from
+   different sources could not clash. Defensible, and wrong: the books are warm
+   cream and tan, the pen sits on a pale desk, and draining all of it left a
+   page the colour of a photocopy. They agree with each other because they were
+   shot the same way, not because they were desaturated.
+   ========================================================================== */
+
+.ed figure img,
+.props img {
+  /* A little contrast and warmth, which is what a photograph gets on a print
+     page. Not a duotone. */
+  filter: contrast(1.04) saturate(1.06);
+}
+.props img {
+  filter: contrast(1.04) saturate(1.08) var(--prop-shadow);
+  opacity: 1;
+}
+:root[data-theme="dark"] .ed figure img {
+  /* On a dark ground a bright photograph punches a hole, so it sits back —
+     dimmed, not drained. */
+  filter: contrast(1.02) saturate(0.94) brightness(0.82);
+}
+:root[data-theme="dark"] .props img {
+  filter: contrast(1.02) saturate(0.9) brightness(0.86) var(--prop-shadow);
+  opacity: 0.9;
+}
+
+/* --- and bigger. They were sized not to be noticed. --------------------- */
+
+/* Big enough to read as real objects, pulled far enough into the corners that
+   their bounding boxes stay off the headline. */
+.prop-books { left: -186px; top: -74px; width: 470px; }
+.prop-pen   { right: -74px; top: -38px; width: 430px; }
+.prop-specs { left: 26px; top: auto; bottom: 26px; width: 250px; }
+
+@media (max-width: 1500px) {
+  .prop-books { left: -160px; top: -60px; width: 400px; }
+  .prop-pen   { right: -20px; top: -22px; width: 370px; }
+  .prop-specs { left: 30px; top: auto; bottom: 22px; width: 215px; }
+}
+@media (max-width: 1279px) {
+  .prop-books { left: -168px; top: -70px; width: 320px; }
+  .prop-pen   { right: -70px; top: -12px; width: 290px; }
+  .prop-specs { display: none; }
+}
+
+/* ==========================================================================
+   WARMTH
+
+   The page was one flat paper colour from top to bottom, so every object on it
+   floated rather than sat. These are all very low opacity on purpose: the point
+   is that you cannot see where they start, only that the page is no longer
+   uniform.
+   ========================================================================== */
+
+/* The hero gets a wash, warm at the top and clearing by the fold. */
+.hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(120% 70% at 18% 0%, rgba(196, 122, 74, 0.13), transparent 62%),
+    radial-gradient(90% 60% at 88% 6%, rgba(140, 47, 57, 0.10), transparent 60%),
+    linear-gradient(180deg, rgba(214, 178, 138, 0.10), transparent 46%);
+}
+:root[data-theme="dark"] .hero::before {
+  background:
+    radial-gradient(120% 70% at 18% 0%, rgba(214, 141, 148, 0.10), transparent 62%),
+    radial-gradient(90% 60% at 88% 6%, rgba(143, 169, 221, 0.07), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 46%);
+}
+.hero-inner { position: relative; z-index: 1; }
+.props { z-index: 1; }   /* position stays absolute; see .props above */
+
+/* The existing drifting glow was almost invisible at 13%. */
+.glow { opacity: 0.2; }
+:root[data-theme="dark"] .glow { opacity: 0.16; }
+
+/* The preview sits in light rather than on flat paper.
+
+   On ::before, not ::after: ::after is already the gradient that fades the
+   bottom of the frame so the preview does not end on a hard horizontal edge
+   mid-sentence. Authoring the halo there quietly deleted it. */
+.preview-card { position: relative; }
+.preview-card::before {
+  content: ""; position: absolute; z-index: -1;
+  left: 4%; right: 4%; top: 14%; bottom: -7%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(140, 47, 57, 0.24), transparent 74%);
+  filter: blur(70px);
+  pointer-events: none;
+}
+:root[data-theme="dark"] .preview-card::before {
+  background: radial-gradient(closest-side, rgba(214, 141, 148, 0.20), transparent 74%);
+}
+
+/* The eyebrow above each row carries the accent, so the page has a colour that
+   repeats down it rather than one maroon headline at the top. */
+.row-cat, .cov-head-label { color: var(--accent-text); }
+
+/* The pill at the very top was the same grey as everything else. */
+.hero .tag {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--accent-text);
+}
+
+/* An alternating tint on the rows used to live here. The page wash further
+   down and the band under Who it helps give the page its rhythm now, and this
+   one was still reaching 20px past the viewport at phone width: the row sits
+   inside a 20px-padded shell, so a -40px inset overhangs by 20px, and 20px of
+   overhang is a horizontal scrollbar. */
+.rows .row { position: relative; }
+
+
+/* ==========================================================================
+   WARMTH, SECOND PASS
+
+   The first pass put colour back in the photographs. This one is about the
+   page they sit on, which was one flat sheet from the fold to the footer, with
+   a slab of near-black halfway down that had a headline in one corner and
+   nothing in the other three.
+
+   Everything here is a ground, not a decoration. The alphas are low on purpose:
+   you should not be able to say where any of it begins, only notice that the
+   page is no longer the colour of a photocopy all the way down.
+   ========================================================================== */
+
+/* --- the whole page, one degree warmer -----------------------------------
+   Fixed rather than sized to the document, so there is no 100vw and therefore
+   no scrollbar to argue with. It sits above the body background and below
+   everything else. Sections with their own opaque ground cover it, which is
+   the point: the dark break should still land. */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(70% 48% at 8% 4%, rgba(196, 122, 74, 0.075), transparent 70%),
+    radial-gradient(58% 44% at 96% 34%, rgba(140, 47, 57, 0.055), transparent 68%),
+    radial-gradient(76% 46% at 46% 104%, rgba(196, 122, 74, 0.065), transparent 70%);
+}
+:root[data-theme="dark"] body::before {
+  background:
+    radial-gradient(70% 48% at 8% 4%, rgba(214, 141, 148, 0.055), transparent 70%),
+    radial-gradient(58% 44% at 96% 34%, rgba(143, 169, 221, 0.045), transparent 68%),
+    radial-gradient(76% 46% at 46% 104%, rgba(214, 141, 148, 0.05), transparent 70%);
+}
+
+/* --- the dark break ------------------------------------------------------
+   It was #14110f flat: a headline in the top-left of a black rectangle, and
+   half the width holding nothing. Light in the empty half turns the slab into
+   a room, and the ground goes fractionally warmer so it reads as ink on paper
+   rather than a hole cut in the page. */
+.dark { position: relative; overflow: hidden; isolation: isolate; }
+.dark::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(52% 96% at 82% 46%, rgba(160, 52, 63, 0.62), transparent 68%),
+    radial-gradient(42% 84% at 102% 6%, rgba(206, 130, 78, 0.34), transparent 70%),
+    radial-gradient(40% 70% at 4% 96%, rgba(120, 60, 40, 0.28), transparent 66%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 34%);
+}
+.dark-inner { padding: 104px 20px 88px; position: relative; }
+.dark .badge {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ded5c8;
+}
+
+/* --- the closing panel ---------------------------------------------------
+   Flat ink under a white button. It is the last thing on the page and the one
+   place a bit of colour is doing a job rather than being applied. */
+.cta-panel {
+  position: relative; isolation: isolate;
+  background:
+    radial-gradient(120% 160% at 92% 18%, rgba(140, 47, 57, 0.55), transparent 62%),
+    radial-gradient(90% 140% at 4% 96%, rgba(196, 122, 74, 0.3), transparent 60%),
+    var(--ink);
+  box-shadow: 0 24px 60px rgba(140, 47, 57, 0.16);
+}
+:root[data-theme="dark"] .cta-panel {
+  background:
+    radial-gradient(120% 160% at 92% 18%, rgba(160, 52, 63, 0.5), transparent 62%),
+    radial-gradient(90% 140% at 4% 96%, rgba(150, 88, 52, 0.28), transparent 60%),
+    var(--panel-2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* --- the seam between the last entry and the FAQ -------------------------
+   The last row of Who it helps ends on a hairline, and then 86px of section
+   padding met another 86px, so the page went quiet for a whole screen. */
+#who { padding-bottom: 34px; }
+
+
+/* --- the quiet stretches -------------------------------------------------
+   Two section paddings meeting end to end put a blank screen between the last
+   question and the last button, and another between that button and the
+   footer. Nothing was wrong with any of it; there was just nothing there. */
+#faq { padding-bottom: 30px; }
+.final { padding: 58px 0 72px; }
+.foot-grid { padding-top: 40px; }
+
+
+/* ==========================================================================
+   A GROUND FOR THE PHOTOGRAPHS
+
+   From the dark break to the footer the page was one unbroken sheet, so the
+   three portraits in Who it helps floated on the same paper as everything
+   above them. A tinted band under that section gives them something to sit on
+   and gives the page a third colour.
+
+   Full bleed without touching layout: a spread box-shadow paints past the
+   element's box and clip-path bounds it, so nothing widens the document and
+   there is no horizontal scrollbar. (This is why it is not `inset: 0 -50vw`,
+   which is exactly the mistake that put a scrollbar on this page once.)
+   ========================================================================== */
+
+#who {
+  --band: #f0ebe3;
+  background: var(--band);
+  box-shadow: 0 0 0 100vmax var(--band);
+  clip-path: inset(0 -100vmax);
+  padding-top: 62px;
+  padding-bottom: 52px;
+}
+:root[data-theme="dark"] #who { --band: #17171b; }
+
+/* The band supplies the separation, so the hairlines that were doing it can
+   soften, and the last one can go entirely. */
+#who .ed { border-color: color-mix(in srgb, var(--ink) 10%, transparent); }
+#who .ed:last-child { border-bottom: 0; }
+.ed-title {
+  border-bottom-color: color-mix(in srgb, var(--ink) 12%, transparent);
+  padding-bottom: 22px;
+}
+
+/* --- the questions -------------------------------------------------------
+   Six identical grey rows with six identical grey chevrons. The row you are
+   pointing at should look like the row you are pointing at. */
+details.faq[open] summary { color: var(--accent-text); }
+details.faq summary:hover svg,
+details.faq[open] summary svg { color: var(--accent); }
+
+
+/* --- the nav on a small phone -------------------------------------------
+   The pill hugs its contents, so once the wordmark, the menu, the theme
+   toggle and a four-word button stop fitting, they stop fitting: the menu
+   button sat on top of the last letter of "Second Reader". Nothing here is
+   removed - the button says what it does in one word instead of three, and
+   the pill gives back the padding it does not need at this width. */
+@media (max-width: 430px) {
+  .cta-tail { display: none; }
+  .nav { padding-inline: 10px; }
+  .nav-inner { gap: 8px; padding-left: 10px; }
+  .nav-right { gap: 2px; }
+}
+
+
+/* ==========================================================================
+   COLOUR IN THE READER
+
+   The app view had one hue in it - a green dot - while the landing page next
+   door had just been given warm props, a maroon dark break and a tinted band.
+   They did not look like the same product.
+
+   Two rules govern everything below.
+
+   1. Colour is INFORMATION. The three verdict states are the product's actual
+      content, so they get the strongest colour in the app, and nothing that is
+      not a verdict is allowed to borrow their hues.
+
+   2. Colour is never the ONLY channel. Each state also differs in dot shape,
+      spine width and chip weight, because roughly one man in twelve cannot
+      separate the green from the indigo by hue, and because a teacher printing
+      a screenshot in greyscale should still be able to read it.
+
+   Appended rather than edited in place: .rail/.side, .side-tabs, mark.ev and
+   .finding are each already declared two or three times in this file, and the
+   last declaration wins.
+   ========================================================================== */
+
+/* --- tokens ---------------------------------------------------------------
+   There are already two :root pairs in this file - one near the top, one
+   beside the criterion palette - and the later wins on any name they share. A
+   third pair at the very end is the only way to be certain which value is in
+   force. */
+
+:root {
+  /* The landing's terracotta, hard-coded four times up there with no token.
+     Naming it is what makes the two halves one product. */
+  --warm: #c47a4a;
+
+  /* The desk, and the paper on it. --ground was #eeece8, a flat neutral; r-b
+     goes 6 -> 16 so it reads as parchment. It cannot go deeper: --ink-3 on it
+     measures 4.52:1, and that is the floor. */
+  --ground: #ece6dc;
+  --panel-warm: #f8f4ed;
+  --panel-2: #f0eae0;
+
+  /* "Half there", deepened one step. The chip is a filled pill now, and the
+     old #8a5a00 on its own fill measured 4.48:1 - a fail. This is 5.24:1. */
+  --mid: #7d5100;
+
+  /* "Not there" is demoted to a graphics-only colour, lighter than body ink so
+     absence recedes. It used to sit one hex step from --ink-3, which is why
+     nothing ever looked absent. Never use it as text - see .chip.t-none. */
+  --none: #8c857c;
+
+  /* The state washes were four indistinguishable ~13% tints. They are an
+     ordered ladder now, and they live on the chips rather than on the essay. */
+  --hl-ok:   rgba(31, 107, 69, 0.10);
+  --hl-mid:  rgba(125, 81, 0, 0.18);
+  --hl-flag: rgba(63, 75, 176, 0.22);
+  --hl-none: rgba(23, 22, 20, 0.06);
+
+  /* The essay gets exactly two marks, because Marked mode only ever shows one
+     criterion at a time: "here is the line", and "here is the line the two
+     readers disagreed about". Four near-identical washes carried no
+     information at all. These two sit about 180 degrees apart in hue at the
+     same lightness, so they are told apart instantly without either going dark
+     under serif body text. */
+  --hl-here: rgba(196, 122, 74, 0.20);
+  --hl-here-act: rgba(63, 75, 176, 0.20);
+}
+:root[data-theme="dark"] {
+  --warm: #d68d94;
+  --ground: #0d0d10;
+
+  /* A hue shift, not a lift: #1e1a1d against --panel #1a1a1f. The note further
+     up this file records that giving dark surfaces a brown cast flattened them
+     all into one muddy sheet, so the elevation ladder stays where it is. */
+  --panel-warm: #1e1a1d;
+
+  --none: #6f6f7a;
+
+  /* Lower alphas than light, on purpose. Do not "tidy" these to match: two of
+     them were AA failures at the light values. */
+  --hl-ok:   rgba(99, 185, 140, 0.14);
+  --hl-mid:  rgba(211, 164, 87, 0.14);
+  --hl-flag: rgba(154, 161, 224, 0.20);
+  --hl-none: rgba(255, 255, 255, 0.06);
+  --hl-here: rgba(224, 178, 140, 0.16);
+  --hl-here-act: rgba(154, 161, 224, 0.20);
+}
+
+/* --- the desk -------------------------------------------------------------
+   .rail, .pane-doc and .side share one background rule, so the three columns
+   read as a single white sheet with slots cut in it. Splitting the two chrome
+   columns onto warm paper turns the frame and the two seams from gaps into
+   furniture, and leaves the essay the one cool, bright object on screen. */
+
+.rail, .side { background: var(--panel-warm); }
+.rail-head, .rail-foot, .side-tabs { background: var(--panel-warm); }
+
+/* The strip under the essay belongs to the page, not to the chrome, so it
+   stays on the cool panel - and its segmented control keeps the old cool grey
+   rather than following --panel-2 into the warm. */
+.doc-status { background: color-mix(in srgb, var(--panel) 88%, transparent); }
+.doc-status .doc-modes { background: #f1efec; }
+:root[data-theme="dark"] .doc-status .doc-modes { background: var(--panel-2); }
+
+/* The bar and the body carry a little light from the top, so the desk has a
+   direction rather than being a flat fill. */
+.app-bar {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--warm) 11%, transparent),
+      color-mix(in srgb, var(--warm) 3%, transparent) 62%,
+      transparent),
+    var(--ground);
+}
+:root[data-theme="dark"] .app-bar {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--warm) 7%, transparent), transparent 70%),
+    var(--ground);
+}
+.app-body {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--warm) 5%, transparent), transparent 260px),
+    var(--ground);
+}
+
+/* The essay card sits in warm light rather than under a neutral grey shadow. */
+.pane-doc {
+  border-color: rgba(150, 100, 62, 0.20);
+  box-shadow: 0 1px 2px rgba(120, 80, 48, 0.06), 0 10px 28px rgba(120, 80, 48, 0.07);
+}
+:root[data-theme="dark"] .pane-doc {
+  border-color: rgba(214, 141, 148, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 14px 34px rgba(0, 0, 0, 0.5);
+}
+.app-bar .kbar, .app-bar .reader-pill { background: var(--panel-warm); }
+.app-bar .bar-sep { background: rgba(150, 100, 62, 0.30); opacity: 1; }
+
+/* --- the three states -----------------------------------------------------
+   A spine down the card, a filled chip, and a dot that differs in SHAPE as
+   well as hue. "Check this one" is the only state that asks a human to do
+   something, so it is the loudest: the widest spine and the only tinted card. */
+
+#findings .finding {
+  position: relative;
+  --tone: var(--line-strong);
+  --tone-wash: transparent;
+}
+#findings .finding.t-ok   { --tone: var(--ok);   --tone-wash: var(--hl-ok); }
+#findings .finding.t-mid  { --tone: var(--mid);  --tone-wash: var(--hl-mid); }
+#findings .finding.t-flag { --tone: var(--flag); --tone-wash: var(--hl-flag); }
+#findings .finding.t-none { --tone: var(--none); --tone-wash: transparent; }
+
+#findings .finding::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--tone);
+}
+#findings .finding.t-flag::before { width: 5px; }
+#findings .finding.t-flag { background: color-mix(in srgb, var(--flag) 6%, var(--panel)); }
+/* .finding carries the verdict hue on `color`, so everything inside inherits
+   it. The prose has to be pulled back to ink or the card reads as tinted
+   text rather than as a card with a coloured edge. */
+#findings .finding.t-flag .finding-desc,
+#findings .finding.t-flag .finding-chev { color: var(--ink-2); }
+
+/* The open card used to take `border-color: currentColor`, which handed "Not
+   there" - a near-ink grey - the most emphatic border of the four. */
+#findings .finding.open { border-color: color-mix(in srgb, var(--tone) 45%, transparent); }
+
+#findings .chip {
+  background: var(--tone-wash);
+  border-color: color-mix(in srgb, var(--tone) 32%, transparent);
+}
+#findings .chip.t-flag { font-weight: 700; border-width: 1.5px; }
+/* --none is a graphics colour and fails as text, so absence borrows ink and
+   says what it is with a dashed edge instead. */
+#findings .chip.t-none { color: var(--ink-3); background: none; border-style: dashed; }
+
+/* The non-hue channel: solid / half / ring / dashed, at 8px so the difference
+   is actually visible. */
+.chip .dot { width: 8px; height: 8px; box-sizing: border-box; }
+.chip.t-mid  .dot { background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+                    box-shadow: inset 0 0 0 1.5px currentColor; }
+.chip.t-flag .dot { background: none; box-shadow: inset 0 0 0 2.5px currentColor; }
+.chip.t-none .dot { background: none; box-shadow: inset 0 0 0 1px currentColor; opacity: 0.7; }
+
+.crit-dot { width: 8px; height: 8px; box-sizing: border-box; }
+.crit[data-tone="mid"]  .crit-dot { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+.crit[data-tone="flag"] .crit-dot { background: none; border-width: 2.5px; }
+.crit[data-tone="none"] .crit-dot { background: none; border-style: dashed; }
+
+/* --- the page -------------------------------------------------------------
+   Marked mode shows one criterion at a time, so the essay needs two marks, not
+   four: the line, and the line the readers fought over. */
+
+mark.ev,
+mark.ev.ok,
+mark.ev.mid,
+mark.ev.none { background: var(--hl-here); box-shadow: none; }
+mark.ev.flag { background: var(--hl-here-act); box-shadow: none; }
+/* A neutral ring on hover. An ink-coloured one read as a correction, and
+   nothing in this product corrects anything. */
+.doc.is-marked mark.ev:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent); }
+@keyframes markPulse { 0%, 40% { background: color-mix(in srgb, var(--accent) 32%, transparent); } 100% {} }
+
+/* --- freeing the verdict hues --------------------------------------------
+   --ok also meant "a reader is connected" and "added since the last draft";
+   --mid also meant "this measurement is unusual". Three unrelated things
+   wearing one colour is why none of them registered. Liveness moves to the
+   brand accent, measurements move to the criterion palette, and green and
+   amber are left to mean one thing each. */
+
+.reader-pill .dot { background: color-mix(in srgb, var(--ink) 22%, transparent); }
+.reader-pill.live .dot { background: var(--accent); }
+.reader-pill.warn .dot { background: var(--ink-3); border-radius: 2px; }
+.ask-src .dot { background: var(--accent); }
+.ask-src.is-off .dot { background: var(--line-strong); }
+.empty-steps li.done i { border-color: var(--accent); background-color: var(--accent); }
+.ac-meter .bar i.ok { background: var(--ink-2); }
+
+/* Signals measures; it does not judge. Its rows must never wear a verdict hue,
+   which is the whole reason that module refuses to return a score. */
+.ins-row.is-flat { border-left-color: var(--line-strong); }
+.ins-warn { border-left-color: var(--c5); }
+.ins-warn.is-do { border-left-color: var(--c6); }
+.ins-quote.add { box-shadow: inset 2.5px 0 0 var(--c3); }
+.ins-quote.cut { box-shadow: inset 2.5px 0 0 var(--line-strong); }
+
+/* Coverage position is not a verdict either, and a 50% cut-off dressed as one
+   would read as a mark against a whole class. */
+#findings .finding-where::before { color: var(--ink-3); }
+.side-panel .cov-row .cov-say::before { color: var(--ink-3); }
+.cov-head.t-good { border-left-color: var(--line-strong); }
+.cov-head.t-watch { border-left-color: var(--accent); }
+.cmp-band.up { box-shadow: inset 2.5px 0 0 var(--c6); }
+.cmp-band.up span { color: var(--c6); }
+.cmp-band.down { box-shadow: inset 2.5px 0 0 var(--mid); }
+.cmp-band.down span { color: var(--mid); }
+
+/* --- the unread note ------------------------------------------------------
+   js/app.js emits .finding-unread and this file has never had a rule for it,
+   so it rendered at body size in the inherited verdict hue while every sibling
+   paragraph sat at 12.5px grey. */
+.finding-unread {
+  margin-top: 12px; padding: 11px 13px; border-radius: 11px;
+  border-left: 3px solid var(--line-strong); background: var(--panel-2);
+  color: var(--ink-2); font-size: 12.5px; line-height: 1.65;
+}
+
+
+/* ==========================================================================
+   THE RAIL IS THE LEGEND
+
+   --c1..--c6 have existed for a while and "All" mode paints every criterion in
+   the essay in its own hue - but the rail, which is the list those colours are
+   the colours OF, never knew. A teacher in All mode saw six colours in the
+   document and no key anywhere on screen.
+
+   Row i corresponds exactly to data-c="i % 6" because the rail and the mark
+   renderer index the same array, so the row can simply wear it. The verdict
+   stays on the dot; identity goes on the leading bar, which is the grammar the
+   coverage bands already use. Two carriers, two meanings, no collision.
+   ========================================================================== */
+
+.crit[data-c="0"] { --id: var(--c1); }
+.crit[data-c="1"] { --id: var(--c2); }
+.crit[data-c="2"] { --id: var(--c3); }
+.crit[data-c="3"] { --id: var(--c4); }
+.crit[data-c="4"] { --id: var(--c5); }
+.crit[data-c="5"] { --id: var(--c6); }
+
+.crit::before { background: color-mix(in srgb, var(--id, var(--line-strong)) 40%, transparent); }
+/* The open row keeps its full-strength bar, so selection still reads. */
+.crit.is-open::before { background: var(--id, currentColor); }
+
+/* The 40px delete target the touch block asks for. It has to be restated here
+   because the plain .crit rule that sets this track sits after that media
+   block and wins on source order. */
+@media (hover: none) {
+  .crit { grid-template-columns: 10px minmax(0, 1fr) 40px; }
+}
+
+/* --- four defects the survey turned up ----------------------------------- */
+
+/* "One reader" means the two-reader merge never ran, which is the most
+   important caveat this app can offer about a result. js/app.js has always
+   written the class; nothing ever styled it, so a degraded read looked exactly
+   like a healthy one. */
+.reader-pill.off { color: var(--ink-3); }
+.reader-pill.off .dot {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+
+/* Filled with --panel on a rail that is --panel, in both themes: the primary
+   way a teacher builds a checklist had no hover feedback at all. */
+.crit-add:hover { background: var(--panel-2); color: var(--ink); }
+
+/* --panel-2 on --ground was a 1.5% step in light mode, so the rail toggle and
+   the overflow button had effectively no hover state. */
+.app-bar .icon-btn:hover { background: color-mix(in srgb, var(--warm) 16%, var(--panel)); }
+:root[data-theme="dark"] .app-bar .icon-btn:hover { background: var(--panel-2); }
+
+/* --- the tab strip reports ------------------------------------------------
+   Not six identity hues: --c1..--c6 already mean "which criterion", and a
+   second six-hue system would make "Evidence is green" and "criterion 2 is
+   green" both true and unrelated. Only the two tabs with something to say get
+   colour. */
+
+#tab-count.t-ok   { background: var(--hl-ok);   color: var(--ok); }
+#tab-count.t-mid  { background: var(--hl-mid);  color: var(--mid); }
+#tab-count.t-none { background: var(--hl-none); color: var(--ink-2); }
+
+.side-tabs button.has-flag::after {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--flag); flex: none; margin-left: 1px;
+}
+.side-tabs button.has-flag { gap: 6px; }
+
+/* --- the key under the bar ------------------------------------------------
+   Three anonymous colours in a bar are a decoration. The dot shapes match the
+   chips exactly, so the key teaches the vocabulary used everywhere else. */
+
+#summary .bar { height: 10px; }
+.bar i.flag { background: var(--flag); }
+#summary .bar i.none { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+
+#summary .legend.key {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  margin: 10px 0 0; padding: 0; list-style: none;
+  font-size: 11.5px; color: var(--ink-2); line-height: 1.6;
+}
+#summary .legend.key li { display: flex; align-items: center; gap: 7px; }
+#summary .legend.key i {
+  width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; flex: none;
+}
+#summary .legend.key .d-ok   { background: var(--ok); }
+#summary .legend.key .d-mid  { color: var(--mid); background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+                               box-shadow: inset 0 0 0 1.5px currentColor; }
+#summary .legend.key .d-flag { color: var(--flag); background: none; box-shadow: inset 0 0 0 2.5px currentColor; }
+#summary .legend.key .d-none { color: var(--none); background: none; box-shadow: inset 0 0 0 1px currentColor; }
+
+
+/* ==========================================================================
+   MORE COLOUR, AND TWO MORE PICTURES
+
+   The page had six photographs and one hue. The stretch from the bottom of the
+   preview to the first editorial portrait ran about 1,600px - nearly two
+   screens - with nothing to look at, and the dark break had a headline in one
+   corner and three empty ones.
+
+   The colour half is mostly a matter of letting the page say what it is
+   already about. The three rows of "how it works" ARE the three verdict
+   states; the markup has carried .d-ok / .d-mid / .d-flag since it was
+   written, and the section rendered all three in identical grey. :has() reads
+   those markers, so nothing new is needed in the HTML.
+   ========================================================================== */
+
+/* --- the plate at the top of how-it-works --------------------------------
+   Above the rows, never beside them: the .gc cards already ARE marked paper
+   drawn diagrammatically, so a photograph of the same idea 300px sideways
+   would give the reader two competing pictures of one thing. Above, the
+   photograph establishes and the cards read as the close-up. */
+.rows-plate {
+  margin: 0; border-radius: 18px; overflow: hidden;
+  aspect-ratio: 16 / 6; background: var(--panel-2);
+  box-shadow: 0 22px 48px -18px rgba(30, 26, 22, 0.28), 0 0 0 1px var(--line);
+}
+.rows-plate img {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover; object-position: 56% 20%;
+  filter: contrast(1.04) saturate(1.06);
+}
+:root[data-theme="dark"] .rows-plate img { filter: contrast(1.02) saturate(0.94) brightness(0.82); }
+/* On a phone a letterbox of this would be a strip of paper and no hand. */
+@media (max-width: 900px) { .rows-plate { aspect-ratio: 4 / 3; } }
+
+/* --- the ground for the dark break ---------------------------------------
+   Bled off the right edge rather than framed: a card floating inside a
+   near-black slab reads as an object in a void. .dark is already
+   `position: relative; overflow: hidden; isolation: isolate`, so this cannot
+   widen the document, and z-index -2 puts it under the maroon glow so the two
+   read as one lit room rather than a photo with a gradient over it.
+
+   The mask is structural, not decorative: it keeps the left column pixel-clean
+   so the headline and the badges never have photograph underneath them. */
+.dark-plate {
+  position: absolute; z-index: -2; pointer-events: none;
+  right: -2%; top: 0; bottom: 0;
+  width: min(52%, 620px); height: 100%;
+  object-fit: cover; object-position: 46% 50%;
+  opacity: 0.9;
+  filter: contrast(1.04) saturate(1.05) brightness(0.92);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 46%),
+                      linear-gradient(180deg, transparent 0, #000 12% 88%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 46%),
+                      linear-gradient(180deg, transparent 0, #000 12% 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+          mask-composite: intersect;
+}
+:root[data-theme="dark"] .dark-plate { opacity: 0.72; filter: contrast(1.02) saturate(0.9) brightness(0.7); }
+@media (max-width: 900px) {
+  /* A bottom band instead, so the phone gets a picture here rather than a
+     sliver of one. */
+  .dark-plate {
+    right: 0; left: 0; top: auto; bottom: 0;
+    width: 100%; height: var(--band-h);
+    object-position: 50% 42%;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 58%);
+            mask-image: linear-gradient(180deg, transparent 0, #000 58%);
+    -webkit-mask-composite: source-over;
+            mask-composite: add;
+  }
+  /* The content reserves the band's exact height, so the pills sit above the
+     photograph rather than on it however the headline wraps. */
+  .dark { --band-h: 190px; }
+  .dark-inner { padding-bottom: calc(var(--band-h) + 30px); }
+}
+
+/* --- the three rows finally wear the three states -------------------------
+   Keyed off the .d-ok / .d-mid / .d-flag markers already in the markup, so
+   there is nothing to keep in sync. */
+.rows .row-art { position: relative; }
+.rows .row-art::before {
+  content: ""; position: absolute; inset: -6% -4%; border-radius: 26px;
+  pointer-events: none; z-index: 0;
+}
+/* :has() scoped to .row-art, NOT to .row. The first row's copy contains the
+   three-state key - a d-ok, a d-mid and a d-flag dot all together - so keying
+   off .row matched all three rules on it, and at equal specificity the last
+   one won: row one wore the disagreement indigo and green never appeared
+   anywhere on the page. .row-art holds exactly one dot. */
+.rows .row-art:has(.d-ok)::before {
+  background: radial-gradient(78% 96% at 62% 44%, color-mix(in srgb, var(--ok) 13%, transparent), transparent 72%);
+}
+.rows .row-art:has(.d-mid)::before {
+  background: radial-gradient(78% 96% at 62% 44%, color-mix(in srgb, var(--mid) 13%, transparent), transparent 72%);
+}
+.rows .row-art:has(.d-flag)::before {
+  background: radial-gradient(78% 96% at 62% 44%, color-mix(in srgb, var(--flag) 13%, transparent), transparent 72%);
+}
+/* The cards have to be lifted above their own glow explicitly. */
+.rows .gc { position: relative; z-index: 1; }
+
+/* The finding card carries the state it is naming. */
+.rows .gc-find:has(.d-ok) {
+  background: color-mix(in srgb, var(--ok) 7%, var(--panel));
+  border-color: color-mix(in srgb, var(--ok) 26%, transparent);
+}
+.rows .gc-find:has(.d-mid) {
+  background: color-mix(in srgb, var(--mid) 7%, var(--panel));
+  border-color: color-mix(in srgb, var(--mid) 26%, transparent);
+}
+.rows .gc-find:has(.d-flag) {
+  background: color-mix(in srgb, var(--flag) 7%, var(--panel));
+  border-color: color-mix(in srgb, var(--flag) 26%, transparent);
+}
+/* The sentence card is paper, and paper is warm. */
+.gc-text { background: color-mix(in srgb, var(--accent) 3%, #fffdfa); }
+:root[data-theme="dark"] .gc-text { background: var(--panel); }
+
+/* --- the editorial entries get their own hues -----------------------------
+   --c1..--c6 already exist and are already tuned for both themes. Three of
+   them widen the page from one colour to four without raising its voice. */
+#who .ed:nth-of-type(1) { --edc: var(--c1); }
+#who .ed:nth-of-type(2) { --edc: var(--c3); }
+#who .ed:nth-of-type(3) { --edc: var(--c2); }
+#who .ed-kicker { color: var(--edc); }
+#who .ed figure { box-shadow: 0 12px 30px rgba(0, 0, 0, 0.10),
+                              0 0 0 1px color-mix(in srgb, var(--edc) 34%, transparent); }
+
+/* --- small things that were grey for no reason ---------------------------- */
+.nav .mark, footer .mark { color: var(--accent); }
+.preview-play span { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .preview-play span { color: #2a0f12; }
+
+
+/* ==========================================================================
+   REPAIRS
+
+   Everything here fixes something in the two colour passes above. Each one was
+   reproduced in the browser first.
+   ========================================================================== */
+
+/* The halo behind the preview was authored on .preview-card::before at
+   z-index:-1. .preview-card is its own stacking context twice over - it has
+   position:relative with z-index:2, and transform-style: preserve-3d - and it
+   has an opaque white background, so a negative-z child paints behind THAT
+   BACKGROUND rather than behind the card, and nothing ever showed. It belongs
+   on the parent, which is positioned and has no background of its own. */
+.preview-card::before { content: none; }
+.preview-wrap::before {
+  content: ""; position: absolute; z-index: 0; pointer-events: none;
+  left: 4%; right: 4%; top: 14%; bottom: -7%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(140, 47, 57, 0.24), transparent 74%);
+  filter: blur(70px);
+}
+:root[data-theme="dark"] .preview-wrap::before {
+  background: radial-gradient(closest-side, rgba(214, 141, 148, 0.20), transparent 74%);
+}
+
+/* The key under the summary bar is a <ul class="legend key">, and the LANDING
+   page has an unscoped `.legend li` that was matching it - 14px type and the
+   landing's own colour, inside an app panel set at 11.5px. */
+#summary .legend.key li {
+  font-size: 11.5px; color: var(--ink-2); font-weight: 500;
+  margin: 0; padding: 0;
+}
+
+/* When a hotlinked photograph cannot be fetched, js/landing.js removes it and
+   marks the section, so the padding reserved for it goes too. Without this the
+   dark break keeps 220px of empty black under the badges when opened offline. */
+#private.no-plate { --band-h: 0px; }
+@media (max-width: 900px) {
+  #private.no-plate .dark-inner { padding-bottom: 72px; }
+}
+
+
+/* ==========================================================================
+   IDENTITY IS A NUMBER
+
+   Making the rail a legend for All mode put a criterion identity hue 10px from
+   a verdict hue in the same row - and measured with dE2000 the two palettes
+   are not disjoint. --c1 was the accent exactly; in dark, --c4 sits 2.4 from
+   --mid, --c2 3.3 from --ok, --c3 5.0 from --flag.
+
+   I looked for six replacement hues that clear all four reserved colours. The
+   best available at this lightness and chroma reaches only dE 13 from the
+   reserved set and dE 10 from each other, and gets there by going pastel with
+   three blues in a row. Six identity hues plus four verdict hues do not fit in
+   one palette, and no amount of tuning hex values changes that.
+
+   So the criterion is identified by its NUMBER, in the rail and on its marks.
+   A numeral cannot be confused with another numeral, and it survives both
+   colour vision deficiency and greyscale. The hues remain as a second cue.
+   ========================================================================== */
+
+/* The rail numbers itself. A counter rather than markup, so paintRail keeps
+   emitting exactly what it emits today. */
+#crits { counter-reset: crit; }
+#crits .crit { counter-increment: crit; }
+#crits .crit::after {
+  content: counter(crit);
+  position: absolute; left: 13px; top: 29px;
+  width: 14px; text-align: center;
+  font-size: 10px; font-weight: 700; line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+/* The gutter has to hold an 8px dot and a 9.5px numeral under it. */
+#crits .crit { grid-template-columns: 14px minmax(0, 1fr) 26px; }
+#crits .crit::before { left: 5px; }
+#crits .crit-dot { margin-left: 3px; }
+@media (hover: none) {
+  #crits .crit { grid-template-columns: 14px minmax(0, 1fr) 40px; }
+}
+
+/* The same number on the essay, in All mode only - in single-criterion Marked
+   mode there is nothing to tell apart. */
+.doc.is-all mark[data-n]::after {
+  content: attr(data-n);
+  font-size: 0.62em; font-weight: 700; vertical-align: super; line-height: 0;
+  margin-left: 1px; color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   THE REST OF THE VERIFICATION FINDINGS
+   ========================================================================== */
+
+/* A pass-to-fail AA regression, and mine. Lightening --none to #8c857c was
+   right for a graphics colour, but `.t-none { color: var(--none) }` is still
+   live and global, and my mitigation was scoped to #findings - so the "Off"
+   chip in the Account dialog's Classroom tab kept the failing colour: 3.65:1
+   in light and 3.49:1 in dark, against 5.97 and 5.56 before the change.
+   Unscoped, every chip in the product gets --ink-3: 5.61:1 and 5.28:1.
+
+   border-color is set explicitly because the dashed edge is the non-hue
+   channel this state depends on, and without it the border inherited a 32%
+   tone mix that drew at about 1.6:1 - which is to say, not drawn. */
+.chip.t-none {
+  color: var(--ink-3);
+  background: none;
+  border-style: dashed;
+  border-color: currentColor;
+}
+
+/* #summary .bar i.none had been overridden to ink at 12%, roughly 1.3:1
+   against its own track, so "the essay does not contain this" read as empty
+   track. The key I added directly beneath it draws that state with --none, so
+   the key that exists to decode the bar was showing a colour the bar did not
+   use. Every other bar in the app already used --none. */
+#summary .bar i.none { background: var(--none); }
+
+/* "Signals measures; it does not judge" moved .cmp-band.up off --ok and left
+   .cmp-band.down on --mid, so "this went backwards between drafts" wore the
+   same amber as "half there". Both halves of the pair are outside the verdict
+   set now. */
+.cmp-band.down { box-shadow: inset 2.5px 0 0 var(--c4); }
+.cmp-band.down span { color: var(--c4); }
+
+
+/* ==========================================================================
+   THE COPY BUTTON STOPS BEING A BAR
+
+   .fb-foot was a full-width strip with its own background and a border along
+   its top edge, holding one button. On a panel that is otherwise one
+   continuous sheet of feedback it read as a piece of furniture that had
+   wandered in.
+
+   The button floats at the bottom right of the sheet instead, and the sheet
+   reserves room underneath so the last line is never sitting behind it.
+   ========================================================================== */
+
+.fb { position: relative; }
+.fb-foot {
+  position: absolute; right: 15px; bottom: 12px; z-index: 2;
+  padding: 0; border-top: 0; background: none;
+  gap: 10px; pointer-events: none;
+}
+.fb-foot > * { pointer-events: auto; }
+.fb-foot .btn { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); }
+:root[data-theme="dark"] .fb-foot .btn { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
+/* "Back to the draft" only appears once the sheet has been edited, and off a
+   bar it needs its own ground to stay readable over the text. */
+.fb-foot .link-quiet {
+  margin-right: 0; padding: 7px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.fb-body { padding-bottom: 56px; }
+
+/* The level control needs its explanation attached to it rather than floating
+   loose in the dialog. */
+.field-note {
+  display: block; margin-top: 6px;
+  font-size: 12px; line-height: 1.55; color: var(--ink-3);
+}

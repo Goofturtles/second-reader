@@ -1,0 +1,11 @@
+# Source photographs the props were cut from. Nothing at runtime references
+# them and they are 2.8MB of the repo, so they stay on the workstation.
+props/raw/
+props/to-cut/
+
+# Scratch probes
+__halo_probe.html
+.playwright-mcp/
+
+# Scratch previews from image sampling
+.tmp_*.png

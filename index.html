@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second Reader — the marking companion that never gives a grade</title>
+<meta name="description" content="Paste a rubric and a piece of student work. Second Reader returns the exact sentences that evidence each criterion, what is missing, and the one change that would move it up. It never gives a grade.">
+<meta name="color-scheme" content="light dark">
+
+<!-- ------------------------------------------------------------------------
+     Theme, decided before the first paint.
+
+     This has to be inline and it has to be above the stylesheet. Anything
+     later - a deferred script, a module, the bottom of <body> - runs after the
+     browser has already painted a white page, and a dark-mode user sees it
+     flash. It is a few lines of duplicated logic against UI.preferredTheme(),
+     which is the cheaper of the two costs.
+
+     colorScheme is set too, so the browser paints its own canvas and
+     scrollbars dark on that first frame rather than white.
+     ------------------------------------------------------------------------ -->
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("sr:theme");
+    var theme = saved === "light" || saved === "dark"
+      ? saved
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.style.colorScheme = theme;
+  } catch (e) {
+    /* private mode, or no storage: the attribute already in the markup stands */
+  }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.pexels.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Newsreader:opsz,wght@6..72,400..600&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="second-reader-favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark" viewBox="2 2 44 44">
+    <!-- Folio Knot: four folded pages surround a quiet open-book counter. -->
+    <defs>
+      <path id="mark-page-loop" d="M17.6 24.6C13.5 19.5 14 12.5 18.6 8.2 23.4 3.8 31 4.5 34.8 9.7 38.4 14.7 37 21 31.8 24.6"/>
+      <mask id="mark-page-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="48">
+        <rect width="48" height="48" fill="white"/>
+        <path d="M19 21.3c2-.5 3.6.2 5 1.8 1.4-1.6 3-2.3 5-1.8v4.4c-1.8-.4-3.5.4-5 2.3-1.5-1.9-3.2-2.7-5-2.3v-4.4Z" fill="black"/>
+      </mask>
+    </defs>
+    <g mask="url(#mark-page-cut)">
+      <g fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="butt" stroke-linejoin="round">
+        <use href="#mark-page-loop"/><use href="#mark-page-loop" transform="rotate(90 24 24)"/>
+        <use href="#mark-page-loop" transform="rotate(180 24 24)"/><use href="#mark-page-loop" transform="rotate(270 24 24)"/>
+      </g>
+      <rect x="16" y="16.5" width="16" height="15" rx="4.5" fill="currentColor"/>
+    </g>
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.3A7 7 0 1 0 4 15.9"/><path d="M13 16l-3 5h8l-3-5z" opacity="0"/><path d="M20 17.6A3.4 3.4 0 0 0 18 11h-1.3"/><path d="M8 16h10"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M10 4v16"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-highlight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 16l3.5-9.5a1.6 1.6 0 0 1 3 0L16 16"/><path d="M7.6 12h7"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7l.8 12.1A1.9 1.9 0 0 0 9.2 21h5.6a1.9 1.9 0 0 0 1.9-1.9L17.5 7"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.4l1.9 5.1a3 3 0 0 0 1.8 1.8l5.1 1.9-5.1 1.9a3 3 0 0 0-1.8 1.8L12 20l-1.9-5.1a3 3 0 0 0-1.8-1.8L3.2 11.2l5.1-1.9a3 3 0 0 0 1.8-1.8z"/><path d="M19 3.2l.6 1.6.0 0 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.4"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-corner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10L5 14l4 4"/><path d="M5 14h9a5 5 0 0 0 5-5V5"/></symbol>
+  <symbol id="i-ask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M9.2 9a2.8 2.8 0 0 1 5.5.9c0 1.9-2.8 2.8-2.8 2.8"/><path d="M12 16h.01"/></symbol>
+</svg>
+
+<!-- ======================================================================
+     LANDING
+     ====================================================================== -->
+<div id="view-landing">
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <button class="brand" data-top>
+        <svg class="mark" aria-hidden="true"><use href="#mark"/></svg>
+        Second Reader
+      </button>
+      <div class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#private">Private</a>
+        <a href="#who">Who it&rsquo;s for</a>
+        <a href="#faq">FAQ</a>
+      </div>
+    </div>
+    <div class="nav-right">
+      <button class="icon-btn nav-menu" id="nav-menu" aria-label="Menu" aria-expanded="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <button class="icon-btn" data-theme-toggle aria-label="Switch theme">
+        <svg data-theme-icon aria-hidden="true"><use href="#i-moon"/></svg>
+      </button>
+      <button class="btn btn-quiet" data-go="login" data-signed-out>Log in</button>
+      <button class="btn btn-quiet nav-hello" data-signed-in data-account hidden id="nav-hello"></button>
+      <button class="btn" data-go="app" id="nav-cta">Open<span class="cta-tail"> the reader</span></button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO — Retool: a small outlined pill, a centred headline, one primary action. -->
+<header class="hero">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="props" aria-hidden="true">
+    <img class="prop-books" src="props/books-vintage.webp" alt="" width="820" height="753" loading="lazy" fetchpriority="low">
+    <img class="prop-pen" src="props/pen-fountain.webp" alt="" width="760" height="347" loading="lazy" fetchpriority="low">
+    <img class="prop-specs" src="props/glasses-black-rect.webp" alt="" width="600" height="322" loading="lazy" fetchpriority="low">
+  </div>
+
+  <div class="hero-inner">
+    <p class="tag rise" style="animation-delay:.05s">For teachers &middot; free</p>
+
+    <h1 class="hero-title">
+      <span class="line-mask"><span style="animation-delay:.12s">You say what to look for.</span></span>
+      <span class="line-mask"><span style="animation-delay:.22s">It finds the <span class="marked">proof</span>.</span></span>
+    </h1>
+
+    <p class="hero-sub rise" style="animation-delay:.34s">
+      <b>Free marking software for teachers.</b> Paste your rubric and one student&rsquo;s
+      essay. It underlines the lines that meet each thing you are looking for, tells you
+      what is missing, and never puts a grade on it.
+    </p>
+
+    <div class="hero-cta rise" style="animation-delay:.42s">
+      <button class="btn btn-lg" data-go="app">Try it on an essay</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- The product, full width and unexplained. If it needs a paragraph to make
+     sense, the product is wrong, not the paragraph. -->
+<section class="stage-section">
+  <div class="stage-hold">
+    <div class="notes" aria-hidden="true">
+      <div class="note note-l">
+        <span>the essay</span>
+        <svg viewBox="0 0 90 60" fill="none"><path d="M6 6c14 26 30 40 78 46" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M74 46l10 6-11 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="note note-r">
+        <span>what it found</span>
+        <svg viewBox="0 0 90 60" fill="none"><path d="M84 6C70 32 50 44 8 48" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18 40l-11 8 12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="note note-b">
+        <svg viewBox="0 0 90 60" fill="none"><path d="M10 54C22 26 44 12 84 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M72 4l13 4-8 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>the exact line</span>
+      </div>
+    </div>
+    <div class="preview-wrap" id="preview">
+      <div class="preview-card">
+        <!-- inert is on the FRAME, not on this box. On the box it also disabled
+             the button below, which is the only way to hand control over. -->
+        <div class="preview-stage" id="preview-stage">
+          <iframe id="preview-frame" title="Second Reader, running" src="about:blank" loading="lazy" tabindex="-1" inert></iframe>
+          <button class="preview-play" id="preview-play" type="button" aria-label="Take control of the reader">
+            <span><svg width="13" height="13" aria-hidden="true"><use href="#i-play"/></svg> Click to use it &mdash; this is the real thing</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- A dark full-bleed break. The page needed one hard contrast change, and
+     this is the claim that earns it. -->
+<section class="dark" id="private">
+  <img class="dark-plate" src="https://images.pexels.com/photos/31881618/pexels-photo-31881618.jpeg?auto=compress&cs=tinysrgb&w=1200"
+       alt="" aria-hidden="true" width="1200" height="800" loading="lazy" decoding="async">
+  <div class="shell dark-inner">
+    <p class="dark-tag">On your computer</p>
+    <h2 class="reveal">Reads the essay here.<br>Sends it nowhere.</h2>
+    <div class="dark-badges reveal">
+      <span class="badge"><i class="dot"></i>No account</span>
+      <span class="badge"><i class="dot"></i>No upload</span>
+      <span class="badge"><i class="dot"></i>Works offline</span>
+      <span class="badge"><i class="dot"></i>Free</span>
+    </div>
+  </div>
+</section>
+
+<!-- Grammarly's device: a sentence card with the mark on it, and a smaller
+     finding card overlapping it. Alternating sides down the page. -->
+<section class="rows shell" id="how">
+  <figure class="rows-plate reveal">
+    <img src="https://images.pexels.com/photos/6084131/pexels-photo-6084131.jpeg?auto=compress&cs=tinysrgb&w=1100"
+         srcset="https://images.pexels.com/photos/6084131/pexels-photo-6084131.jpeg?auto=compress&cs=tinysrgb&w=700 700w, https://images.pexels.com/photos/6084131/pexels-photo-6084131.jpeg?auto=compress&cs=tinysrgb&w=1100 1100w"
+         sizes="(max-width: 900px) calc(100vw - 40px), min(1040px, 100vw - 40px)"
+         alt="A hand drawing a yellow highlighter along one line of a printed handout that is already marked in green and orange, with notes written in the margin"
+         width="1100" height="413" loading="lazy" decoding="async">
+  </figure>
+  <article class="row reveal">
+    <div class="row-copy">
+      <p class="row-cat">What you get back</p>
+      <h2>The line, and what it answers.</h2>
+      <p>It marks the sentence, and names what it answers.</p>
+      <ul class="legend">
+        <li><i class="dot d-ok"></i><b>Found it</b></li>
+        <li><i class="dot d-mid"></i><b>Half there</b> &mdash; thin</li>
+        <li><i class="dot d-flag"></i><b>Check this one</b> &mdash; they disagree</li>
+      </ul>
+    </div>
+    <div class="row-art" aria-hidden="true">
+      <div class="gc gc-text">
+        <p><em class="u-ok">So the ban should stay.</em> Not because it raises scores,
+          though it might, but because attention is the one resource a classroom runs on.</p>
+      </div>
+      <div class="gc gc-find">
+        <p class="gc-cat"><i class="dot d-ok"></i>Claim &middot; found it</p>
+        <p class="gc-body">The position is stated, and stated last where it lands hardest.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="row row-flip reveal">
+    <div class="row-copy">
+      <p class="row-cat">The gap</p>
+      <h2>And what is not there.</h2>
+      <p>The missing source. The claim on its own.</p>
+    </div>
+    <div class="row-art" aria-hidden="true">
+      <div class="gc gc-text">
+        <p>Everyone knows that phones are distracting and <em class="u-mid">studies show</em>
+          that they make it harder to learn.</p>
+      </div>
+      <div class="gc gc-find">
+        <p class="gc-cat"><i class="dot d-mid"></i>Evidence &middot; half there</p>
+        <p class="gc-body">&ldquo;Studies show&rdquo; is standing in for a source. Name one.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="row reveal">
+    <div class="row-copy">
+      <p class="row-cat">The disagreement</p>
+      <h2>Two readers. Neither one wins.</h2>
+      <p>Where they split, it hands that one back to you.</p>
+    </div>
+    <div class="row-art" aria-hidden="true">
+      <div class="gc gc-text">
+        <p><em class="u-flag">Some people might say that phones are useful for looking
+          things up.</em></p>
+      </div>
+      <div class="gc gc-find">
+        <p class="gc-cat"><i class="dot d-flag"></i>Counterargument &middot; check this one</p>
+        <p class="gc-body">One reader says found it. The other says half there.</p>
+      </div>
+    </div>
+  </article>
+</section>
+
+<!-- The New Yorker's list: kicker, serif headline, one line, image, hairline. -->
+<section class="sec shell" id="who">
+  <p class="ed-title">Who it helps</p>
+  <div class="ed-list">
+    <article class="ed reveal">
+      <div>
+        <p class="ed-kicker">At nine at night</p>
+        <h3>The teacher, halfway down the pile</h3>
+        <p>She knows what a 4 looks like. She does not have time to find the line that proves it.</p>
+      </div>
+      <figure><img src="https://images.pexels.com/photos/8499635/pexels-photo-8499635.jpeg?auto=compress&cs=tinysrgb&w=760" srcset="https://images.pexels.com/photos/8499635/pexels-photo-8499635.jpeg?auto=compress&cs=tinysrgb&w=480 480w, https://images.pexels.com/photos/8499635/pexels-photo-8499635.jpeg?auto=compress&cs=tinysrgb&w=760 760w" sizes="(max-width: 900px) calc(100vw - 40px), clamp(240px, 26vw, 360px)" alt="A teacher marking at a desk in her own classroom" loading="lazy"></figure>
+    </article>
+    <article class="ed reveal">
+      <div>
+        <p class="ed-kicker">The morning after</p>
+        <h3>The student who asked why</h3>
+        <p>Not a mark and a shrug. A sentence, and the one thing that would have moved it up.</p>
+      </div>
+      <figure><img src="https://images.pexels.com/photos/4173338/pexels-photo-4173338.jpeg?auto=compress&cs=tinysrgb&w=760" srcset="https://images.pexels.com/photos/4173338/pexels-photo-4173338.jpeg?auto=compress&cs=tinysrgb&w=480 480w, https://images.pexels.com/photos/4173338/pexels-photo-4173338.jpeg?auto=compress&cs=tinysrgb&w=760 760w" sizes="(max-width: 900px) calc(100vw - 40px), clamp(240px, 26vw, 360px)" alt="A teacher and a student reading the same page of work together" loading="lazy"></figure>
+    </article>
+    <article class="ed reveal">
+      <div>
+        <p class="ed-kicker">Every June</p>
+        <h3>The department, moderating</h3>
+        <p>Two teachers read the same essay differently. This makes that visible in September.</p>
+      </div>
+      <figure><img src="https://images.pexels.com/photos/37795357/pexels-photo-37795357.jpeg?auto=compress&cs=tinysrgb&w=760" srcset="https://images.pexels.com/photos/37795357/pexels-photo-37795357.jpeg?auto=compress&cs=tinysrgb&w=480 480w, https://images.pexels.com/photos/37795357/pexels-photo-37795357.jpeg?auto=compress&cs=tinysrgb&w=760 760w" sizes="(max-width: 900px) calc(100vw - 40px), clamp(240px, 26vw, 360px)" alt="Two colleagues at one table going over written work" loading="lazy"></figure>
+    </article>
+  </div>
+</section>
+
+<section class="sec shell" id="faq">
+  <div class="faq-head reveal">
+    <p class="kicker">FAQ</p>
+    <h2>Questions?<br>Straight answers.</h2>
+  </div>
+  <div class="faq-list" id="faq-list"></div>
+</section>
+
+<!-- FINAL CTA — Retool: outlined pill, one line, one button, nothing else. -->
+<section class="final">
+  <div class="shell">
+    <div class="cta-panel reveal">
+      <div>
+        <h2>Try one essay. Then decide.</h2>
+        <p>It opens with a read already on screen. Fifteen seconds to know whether it is any use to you.</p>
+      </div>
+      <button class="btn btn-lg btn-invert" data-go="app">Open the reader</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER — Linear: quiet columns of links, the wordmark alone on the left,
+     fine print on its own hairline row. folk's social/legal split at the base. -->
+<footer>
+  <div class="shell">
+    <div class="foot-grid">
+      <div class="foot-about">
+        <button class="brand" data-top><svg class="mark" aria-hidden="true"><use href="#mark"/></svg> Second Reader</button>
+        <p>A marking companion that finds the evidence and leaves the judgement alone.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Product</h4>
+        <ul>
+          <li><button data-go="app">Open the reader</button></li>
+          <li><a href="#steps">How it works</a></li>
+          <li><a href="#reframe">The difference</a></li>
+          <li><a href="#parts">What is inside</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>Method</h4>
+        <ul>
+          <li><a href="#parts">The two readers</a></li>
+          <li><a href="#faq">Why no grade</a></li>
+          <li><a href="#faq">What is sent where</a></li>
+          <li><a href="#parts">The eight checks</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>Elsewhere</h4>
+        <ul>
+          <li><a href="https://august-ai-challenge-31059.devpost.com/" target="_blank" rel="noreferrer">Prometheus August AI Challenge</a></li>
+          <li><button data-go="login">Sign in</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>&copy; 2026 Second Reader · a marking companion, not a marking machine</span>
+      <span class="tnum">Vanilla JS · no build step · on-device by default</span>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<!-- ======================================================================
+     LOGIN
+     ====================================================================== -->
+<div id="view-login" hidden>
+  <div class="auth">
+    <div class="glow" aria-hidden="true"></div>
+    <div class="auth-beam" aria-hidden="true"></div>
+
+    <div class="auth-top">
+      <button class="btn btn-quiet" data-go="landing"><svg width="13" height="13" style="margin-right:2px"><use href="#i-back"/></svg> Back</button>
+    </div>
+
+    <main class="auth-main">
+      <div class="auth-card">
+        <svg class="mark mark-lg" aria-hidden="true"><use href="#mark"/></svg>
+        <h1>Sign in to Second Reader</h1>
+        <p class="sub">Your rubrics, your saved reads, and your standard — kept to your profile.</p>
+
+        <div id="auth-resume"></div>
+
+        <div class="auth-sso">
+          <button class="sso" id="sso-google">
+            <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.57-5.17 3.57-8.81z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.93-2.91l-3.87-3c-1.07.72-2.44 1.15-4.06 1.15-3.12 0-5.77-2.11-6.71-4.95H1.29v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.29 14.29a7.2 7.2 0 0 1 0-4.58v-3.1H1.29a12 12 0 0 0 0 10.78l4-3.1z"/><path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.29 6.61l4 3.1C6.23 6.88 8.88 4.77 12 4.77z"/></svg>
+            Continue with Google
+          </button>
+          <button class="sso" id="sso-school">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9L12 4 2 9l10 5 10-5z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5"/></svg>
+            Continue with your school
+          </button>
+        </div>
+
+        <div class="divider" aria-hidden="true"><hr><span>or</span><hr></div>
+
+        <form id="auth-form" novalidate>
+          <div id="auth-fields"></div>
+          <p class="notice is-empty" id="auth-notice" role="status" aria-live="polite"></p>
+          <button class="btn" type="submit" id="auth-submit">Continue with email</button>
+          <button class="link-quiet" type="button" id="auth-change" hidden>Use a different email</button>
+        </form>
+
+        <button class="link-quiet" data-go="app">Skip for now, read as a guest</button>
+
+        <p class="auth-fine">Profiles live in this browser only, PINs stored salted and hashed.
+          No server, nothing leaves this machine.</p>
+      </div>
+    </main>
+
+    <div class="auth-foot">Second Reader · it finds the evidence, you make the call</div>
+  </div>
+</div>
+
+<!-- ======================================================================
+     APP
+     ====================================================================== -->
+<div id="view-app" hidden>
+  <div class="app">
+
+    <!-- ------------------------------------------------------------------
+         THE BAR - Craft / Confluence put the document's own title in the bar,
+         so the one thing you are working on names the screen. Vapi and Fey put
+         a visible search affordance in it that advertises the palette rather
+         than hiding it behind a shortcut nobody discovers.
+         ------------------------------------------------------------------ -->
+    <!-- ------------------------------------------------------------------
+         THE BAR, in three groups rather than eight loose controls: what you
+         are working on, what you can do to it, and the tools. Two long status
+         pills saying nearly the same thing became one that you can press.
+         ------------------------------------------------------------------ -->
+    <header class="app-bar">
+      <div class="bar-doc">
+        <button class="brand" data-go="landing" title="Back to the home page">
+          <svg class="mark" aria-hidden="true"><use href="#mark"/></svg>
+        </button>
+
+        <button class="icon-btn" id="btn-rail" aria-label="Hide the checklist" aria-expanded="true">
+          <svg aria-hidden="true"><use href="#i-panel"/></svg>
+        </button>
+
+        <label class="sr-only" for="doc-title">Title</label>
+        <input class="title-input" id="doc-title" placeholder="Untitled essay" maxlength="140" autocomplete="off" spellcheck="false">
+
+      </div>
+
+      <div class="bar-do">
+        <button class="kbar" id="btn-palette" aria-label="Search and commands">
+          <svg aria-hidden="true"><use href="#i-search"/></svg>
+          <span>Search</span>
+          <kbd data-key="⌘K">&#8984;K</kbd>
+        </button>
+
+        <!-- One pill, and it is a button: the readers are a setting, so the
+             thing that reports them should be the way in to changing them. -->
+        <button class="reader-pill" id="reader-pill" aria-label="Reader settings">
+          <i class="dot"></i><span id="reader-label">Readers</span>
+        </button>
+
+        <span class="bar-sep" aria-hidden="true"></span>
+
+        <button class="btn btn-ghost" id="btn-demo">Try an example</button>
+        <button class="btn" id="btn-read">Read it</button>
+
+        <span class="bar-sep" aria-hidden="true"></span>
+
+        <div class="menu-wrap">
+          <button class="icon-btn" id="btn-more" aria-label="More" aria-haspopup="true" aria-expanded="false">
+            <svg aria-hidden="true"><use href="#i-more"/></svg>
+          </button>
+        </div>
+        <button class="icon-btn" data-theme-toggle aria-label="Switch theme">
+          <svg data-theme-icon><use href="#i-moon"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="app-body">
+
+      <!-- --------------------------------------------------------------
+           LEFT - the checklist, typed straight into.
+           7shifts keeps a live "Add a task..." row at the foot of the list so
+           there is never a mode to enter. Matter groups a quiet rail under
+           small caps labels, which is where the section headings come from.
+           -------------------------------------------------------------- -->
+      <aside class="rail" id="rail" aria-label="Your work">
+        <!-- Craft, Notion and Linear all put the current document and the way
+             to the others at the top of the sidebar. It was a stray pill in the
+             bar; here it is the thing the column is about. -->
+        <div class="rail-top">
+          <div class="menu-wrap">
+            <button class="essay-btn" id="btn-shelf" aria-haspopup="true" aria-expanded="false">
+              <svg class="essay-icon" aria-hidden="true"><use href="#i-file"/></svg>
+              <span class="essay-lines">
+                <b id="essay-now">Untitled essay</b>
+                <span id="shelf-count">Nothing saved yet</span>
+              </span>
+              <svg class="shelf-chev" aria-hidden="true"><use href="#i-chev"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="rail-head">
+          <h2 id="rail-title">Your checklist</h2>
+          <span class="kicker" id="rubric-count"></span>
+        </div>
+
+        <div class="rail-scroll">
+          <p class="rail-hint" id="rail-hint">What should the writing do? One line each.</p>
+          <div class="crits" id="crits"></div>
+          <button class="crit-add" id="crit-add">
+            <svg aria-hidden="true"><use href="#i-plus"/></svg>
+            <span id="crit-add-label">Add something to look for</span>
+          </button>
+        </div>
+
+        <div class="rail-foot">
+          <button class="link-quiet" id="btn-paste">Paste a whole rubric at once</button>
+          <p class="fine" id="foot-fine">Nothing here is a grade. It is evidence, gaps, and one next move.</p>
+        </div>
+      </aside>
+
+      <!-- --------------------------------------------------------------
+           MIDDLE - the essay, typed straight into.
+           Linear's empty document is one grey title and one grey
+           "Start writing...", no toolbar, nothing to dismiss. Notion puts a
+           row of first moves under the empty page. The sheet floats on the
+           app ground rather than sitting flush between hairlines.
+           -------------------------------------------------------------- -->
+      <section class="pane-doc" aria-label="The essay">
+        <div class="doc-scroll" id="doc-scroll">
+          <div class="doc" id="doc" contenteditable="true" spellcheck="true"
+               role="textbox" aria-multiline="true" aria-label="The essay"
+               data-placeholder="Start writing, or paste the essay here…"></div>
+        </div>
+
+        <!-- ----------------------------------------------------------
+             ASK - the composer only.
+             One line under the essay, because that is what it asks about.
+             The answers appear in the side column: a card expanding over the
+             document covered the very paragraph you were asking about.
+             ---------------------------------------------------------- -->
+        <div class="askdock" id="askdock">
+          <form class="composer" id="ask-form">
+            <svg class="composer-spark" aria-hidden="true"><use href="#i-spark"/></svg>
+            <label class="sr-only" for="ask-input">Ask about this essay</label>
+            <!-- It sits under the essay but the answer appears in the side
+                 column, so it has to say which panel it drives. -->
+            <textarea id="ask-input" class="composer-input" rows="1"
+                      placeholder="Ask about this essay…" autocomplete="off"
+                      aria-controls="panel-ask"></textarea>
+            <kbd class="composer-key" id="composer-key" data-key="⌘/">&#8984;/</kbd>
+            <button class="composer-send" id="ask-send" type="submit" aria-label="Ask" disabled>
+              <svg aria-hidden="true"><use href="#i-up"/></svg>
+            </button>
+          </form>
+        </div>
+
+        <!-- The coverage map. Nothing else here tells you WHERE in the essay
+             each thing was found, and "all the evidence is in paragraph two"
+             is a real marking observation. -->
+        <div class="cov-strip" id="cov-strip" hidden aria-label="Where the evidence sits"></div>
+
+        <!-- Grammarly keeps the counts on a thin strip under the text. -->
+        <div class="doc-status">
+          <span class="doc-count" id="doc-count">Nothing to read yet</span>
+          <span class="doc-stale" id="doc-stale" hidden>Text changed — read it again</span>
+          <div class="doc-modes" id="doc-modes" role="group" aria-label="View">
+            <button data-mode="write" aria-pressed="true"><svg aria-hidden="true"><use href="#i-pencil"/></svg>Write</button>
+            <button data-mode="read" aria-pressed="false" disabled><svg aria-hidden="true"><use href="#i-highlight"/></svg>Marked</button>
+            <button data-mode="all" aria-pressed="false" disabled><svg aria-hidden="true"><use href="#i-layers"/></svg>All</button>
+          </div>
+        </div>
+        <input type="file" id="file-input" accept=".txt,.md,text/plain" hidden>
+      </section>
+
+      <!-- --------------------------------------------------------------
+           RIGHT - what the readers found.
+           Grammarly's review panel is a tab strip over one scrolling column:
+           the document never moves, the panel changes.
+           -------------------------------------------------------------- -->
+      <aside class="side" aria-label="What the readers found">
+        <div class="side-tabs" role="tablist">
+          <button role="tab" id="tab-evidence" data-tab="evidence" aria-selected="true" aria-controls="panel-evidence">
+            Evidence <span class="tab-count" id="tab-count" hidden></span>
+          </button>
+          <button role="tab" id="tab-feedback" data-tab="feedback" aria-selected="false" aria-controls="panel-feedback">Feedback</button>
+          <button role="tab" id="tab-ask" data-tab="ask" aria-selected="false" aria-controls="panel-ask">
+            <svg class="tab-spark" aria-hidden="true"><use href="#i-spark"/></svg>Ask
+            <span class="tab-count" id="ask-count" hidden></span>
+          </button>
+          <button role="tab" id="tab-signals" data-tab="signals" aria-selected="false" aria-controls="panel-signals">Signals</button>
+          <button role="tab" id="tab-class" data-tab="class" aria-selected="false" aria-controls="panel-class">Class</button>
+          <button role="tab" id="tab-drafts" data-tab="drafts" aria-selected="false" aria-controls="panel-drafts">Drafts</button>
+        </div>
+
+        <div class="side-panel" id="panel-evidence" role="tabpanel" aria-labelledby="tab-evidence" tabindex="0">
+          <div class="side-scroll">
+            <div id="summary"></div>
+            <div class="findings" id="findings"></div>
+          </div>
+        </div>
+
+        <!-- Three closer looks at the same essay. They were dialogs behind the
+             overflow menu, which is where things go to not be found. -->
+        <div class="side-panel" id="panel-signals" role="tabpanel" aria-labelledby="tab-signals" tabindex="0" hidden>
+          <div class="side-scroll" id="signals-body"></div>
+        </div>
+        <div class="side-panel" id="panel-class" role="tabpanel" aria-labelledby="tab-class" tabindex="0" hidden>
+          <div class="side-scroll" id="class-body"></div>
+        </div>
+        <div class="side-panel" id="panel-drafts" role="tabpanel" aria-labelledby="tab-drafts" tabindex="0" hidden>
+          <div class="side-scroll" id="drafts-body"></div>
+        </div>
+
+        <!-- The conversation. It sits beside the evidence it is drawn from,
+             which is also where a teacher is already looking. -->
+        <div class="side-panel" id="panel-ask" role="tabpanel" aria-labelledby="tab-ask" tabindex="0" hidden>
+          <div class="ask">
+            <div class="ask-head">
+              <span class="ask-src" id="ask-src"><i class="dot"></i><span id="ask-src-label">From the read</span></span>
+              <button class="link-quiet" id="ask-clear" hidden>Clear</button>
+            </div>
+            <p class="sr-only" id="ask-status" role="status" aria-live="polite"></p>
+            <div class="ask-log" id="ask-log" role="log" aria-live="polite"
+                 aria-relevant="additions" aria-label="Answers"></div>
+            <div class="ask-chips" id="ask-chips">
+              <button data-ask="What is missing?">What is missing?</button>
+              <button data-ask="What is contested?">What is contested?</button>
+              <button data-ask="Show me the evidence">Show me the evidence</button>
+              <button data-ask="Which paragraph is doing the least work?">Weakest paragraph</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- What the student actually receives. Everything else in this app is
+             for the marker; this is the only surface the person being marked
+             ever sees, which makes it the one worth putting on screen. -->
+        <div class="side-panel" id="panel-feedback" role="tabpanel" aria-labelledby="tab-feedback" tabindex="0" hidden>
+          <div class="fb">
+            <div class="fb-head">
+              <div class="fb-switch" role="group" aria-label="Which sheet">
+                <button data-fb="student" aria-pressed="true">For the student</button>
+                <button data-fb="teacher" aria-pressed="false">For you</button>
+              </div>
+              <div class="fb-tools">
+                <span class="fb-hint">Markdown and LaTeX</span>
+                <div class="fb-view" role="group" aria-label="Edit or preview">
+                  <button data-fbview="write" aria-pressed="false" aria-label="Edit">
+                    <svg aria-hidden="true"><use href="#i-pencil"/></svg>Edit
+                  </button>
+                  <button data-fbview="read" aria-pressed="true" aria-label="Preview">
+                    <svg aria-hidden="true"><use href="#i-file"/></svg>Preview
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="fb-body" id="fb-body"></div>
+            <div class="fb-foot" id="fb-foot" hidden>
+              <button class="link-quiet" id="fb-reset">Back to the draft</button>
+              <button class="btn" id="fb-copy">Copy</button>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+    </main>
+
+  </div>
+
+  <!-- ------------------------------------------------------------------
+       THE PALETTE - Vapi and Juicebox both group the rows under small caps
+       headings, dim a descriptor after the label, and keep a hint bar along
+       the bottom. The hint bar is the part that makes it feel like a tool
+       rather than a search box.
+       ------------------------------------------------------------------ -->
+  <div class="palette-back" id="palette" hidden>
+    <div class="palette" role="dialog" aria-modal="true" aria-label="Search and commands">
+      <div class="palette-top">
+        <svg aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="palette-input" class="palette-input" placeholder="Type a command, or a word from the essay…"
+               autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true"
+               aria-controls="palette-list" aria-autocomplete="list">
+        <kbd>esc</kbd>
+      </div>
+      <div class="palette-list" id="palette-list" role="listbox" aria-label="Commands"></div>
+      <div class="palette-foot">
+        <span><kbd>&#8593;</kbd><kbd>&#8595;</kbd> to move</span>
+        <span><kbd>&#8629;</kbd> to run</span>
+        <span class="palette-count" id="palette-count"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="layer"></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ondevice.js"></script>
+<script src="js/readers.js"></script>
+<script src="js/session.js"></script>
+<script src="js/signals.js"></script>
+<script src="js/shelf.js"></script>
+<script src="js/classroom.js"></script>
+<script src="js/markdown.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/landing.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
