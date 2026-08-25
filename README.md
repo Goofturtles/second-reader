@@ -11,7 +11,17 @@ evidence is what the teacher is actually short of.
 Built for the [Prometheus August AI Challenge](https://august-ai-challenge-31059.devpost.com/)
 (deadline 29 Aug 2026).
 
-## Run it
+## Try it
+
+**[goofturtles.github.io/second-reader](https://goofturtles.github.io/second-reader/)**
+
+It opens with an essay and a checklist already on screen, so there is nothing to
+set up: press **Read it**. No account, no upload, no API key. The close reader
+runs entirely in the page; the second reader uses Chrome's built-in on-device
+model if the browser has one, and can be pointed at Gemini instead from the
+reader pill in the top bar.
+
+## Run it locally
 
 No build step, no dependencies, no API key.
 
