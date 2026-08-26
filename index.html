@@ -37,7 +37,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://images.pexels.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Newsreader:opsz,wght@6..72,400..600&display=swap">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=20260826-2">
 <link rel="icon" href="second-reader-favicon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -475,6 +475,14 @@
             <svg aria-hidden="true"><use href="#i-more"/></svg>
           </button>
         </div>
+        <!-- A mode, not a command, so it shows its state without being opened.
+             Which tools you get is the biggest single thing about this app and
+             it was buried in the overflow menu. -->
+        <div class="role-swap" role="radiogroup" aria-label="Which are you?">
+          <button type="button" role="radio" data-role-set="teacher" aria-checked="true">Teacher</button>
+          <button type="button" role="radio" data-role-set="student" aria-checked="false">Student</button>
+        </div>
+
         <button class="icon-btn" data-theme-toggle aria-label="Switch theme">
           <svg data-theme-icon><use href="#i-moon"/></svg>
         </button>
@@ -701,19 +709,19 @@
 
 <div id="layer"></div>
 
-<script src="js/data.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/ondevice.js"></script>
-<script src="js/readers.js"></script>
-<script src="js/session.js"></script>
-<script src="js/signals.js"></script>
-<script src="js/shelf.js"></script>
-<script src="js/classroom.js"></script>
-<script src="js/markdown.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/landing.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/app.js"></script>
-<script src="js/main.js"></script>
+<script src="js/data.js?v=20260826-2"></script>
+<script src="js/engine.js?v=20260826-2"></script>
+<script src="js/ondevice.js?v=20260826-2"></script>
+<script src="js/readers.js?v=20260826-2"></script>
+<script src="js/session.js?v=20260826-2"></script>
+<script src="js/signals.js?v=20260826-2"></script>
+<script src="js/shelf.js?v=20260826-2"></script>
+<script src="js/classroom.js?v=20260826-2"></script>
+<script src="js/markdown.js?v=20260826-2"></script>
+<script src="js/ui.js?v=20260826-2"></script>
+<script src="js/landing.js?v=20260826-2"></script>
+<script src="js/auth.js?v=20260826-2"></script>
+<script src="js/app.js?v=20260826-2"></script>
+<script src="js/main.js?v=20260826-2"></script>
 </body>
 </html>

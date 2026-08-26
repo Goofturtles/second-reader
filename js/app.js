@@ -76,11 +76,31 @@
    * and setTab has to be given a chance to fall back if the current tool has
    * just been taken away.
    */
+  function paintRoleSwap() {
+    document.querySelectorAll("[data-role-set]").forEach((b) =>
+      b.setAttribute("aria-checked", b.getAttribute("data-role-set") === Session.role() ? "true" : "false")
+    );
+  }
+
+  function wireRoleSwap() {
+    document.querySelectorAll("[data-role-set]").forEach((b) =>
+      b.addEventListener("click", () => setRole(b.getAttribute("data-role-set")))
+    );
+  }
+
   function setRole(next) {
     const value = Session.setLocalRole(next);
+    paintRoleSwap();
     paintRoleCopy();
+    paintRoleSwap();
     paintRail();
     setTab(state.tab);
+    /* Signals and Feedback both change SHAPE with the role - a sub-tab appears
+       or disappears, a sheet toggle goes - and neither is repainted by render.
+       Without these two lines the strip updates and the open panel does not,
+       which looks exactly like nothing happening. */
+    if (state.tab === "signals") paintSignals();
+    if (state.tab === "feedback") paintFeedback();
     render();
     toast(value === "student"
       ? "Student tools. Class is a teacher's view, so it is put away."
@@ -1639,10 +1659,12 @@
 
           paneEl.querySelectorAll("[data-setrole]").forEach((b) =>
             b.addEventListener("click", () => {
-              Session.setRole(session.email, b.getAttribute("data-setrole"));
+              /* Through the app's own switch, so the rail copy, the tool strip
+                 and the open panel all repaint. Session.setRole alone wrote the
+                 profile and left the running app showing the other role. */
               session.role = b.getAttribute("data-setrole");
+              setRole(session.role);
               paint();
-              render();
             })
           );
 
@@ -3715,6 +3737,7 @@
       wireDoc();
       wireRail();
       wireTabs();
+      wireRoleSwap();
       wireAsk();
       wireFeedback();
       wireBar();
