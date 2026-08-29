@@ -95,7 +95,24 @@
   }
 
   function setRole(next) {
+    if (Session.role() === next) return next;
+
+    /* The drawers are separate, so the essay on screen belongs to the one it
+       was saved in. Save it into the OLD drawer first - before setLocalRole
+       moves the key - then clear the desk, so a student sitting down at a
+       machine a teacher was marking on does not inherit the paper that was
+       open. Nothing is lost: it is in the teacher's Saved essays, one click
+       away, and the teacher's own drawer is untouched by any of this. */
+    autoSave();
     const value = Session.setLocalRole(next);
+    resetDocument();
+    state.work = blankWork();
+    const doc = document.getElementById("doc");
+    if (doc) doc.textContent = "";
+    const title = document.getElementById("doc-title");
+    if (title) title.value = "";
+    state.tutor = null;
+    mg.queue = []; mg.at = 0; mg.log = []; mg.walk = 0; mg.pending = null;
     /* Becoming a student throws the read away rather than hiding it. The
        painters are guarded and the panels are hidden, so nothing was on screen
        either way - but a marking result sitting in a hidden panel is still a
@@ -107,11 +124,7 @@
        that drawer has never heard of. */
     state.entryId = null;
 
-    if (value === "student" && state.result) {
-      state.result = null;
-      state.selected = null;
-      state.tutor = null;
-      mg.queue = []; mg.at = 0; mg.log = []; mg.walk = 0; mg.pending = null;
+    if (value === "student") {
       const summary = document.getElementById("summary");
       const findings = document.getElementById("findings");
       const fb = document.getElementById("fb-body");
@@ -123,7 +136,6 @@
          was never on screen. It was still "4/4" sitting in the document, and
          the whole point of this design is that the number does not exist. */
       if (count) { count.textContent = ""; count.hidden = true; }
-      setMode("write");
     }
     paintRoleSwap();
     paintRoleCopy();
@@ -138,8 +150,8 @@
     if (state.tab === "feedback") paintFeedback();
     render();
     toast(value === "student"
-      ? "Student tools, and your own saved work \u2014 nobody else's."
-      : "Teacher tools, and the set you have been marking.");
+      ? "Student tools. Your own saved work only — anything open went to Saved essays."
+      : "Teacher tools. The set you were marking is in Saved essays.");
     return value;
   }
 
