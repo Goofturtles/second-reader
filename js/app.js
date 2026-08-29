@@ -109,9 +109,14 @@
       const summary = document.getElementById("summary");
       const findings = document.getElementById("findings");
       const fb = document.getElementById("fb-body");
+      const count = document.getElementById("tab-count");
       if (summary) summary.innerHTML = "";
       if (findings) findings.innerHTML = "";
       if (fb) fb.innerHTML = "";
+      /* The badge is inside the Evidence TAB, which paintTabs hides - so this
+         was never on screen. It was still "4/4" sitting in the document, and
+         the whole point of this design is that the number does not exist. */
+      if (count) { count.textContent = ""; count.hidden = true; }
       setMode("write");
     }
     paintRoleSwap();
