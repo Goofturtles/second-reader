@@ -176,9 +176,26 @@
     return session && session.name ? session.name.split(/\s+/)[0] : null;
   }
 
-  /** Saved reads are scoped per profile; guests share one drawer. */
-  function shelfKey(session) {
-    return session ? "sr:shelf:v1:" + session.email : "sr:shelf:v1:guest";
+  /*
+   * Saved reads are scoped per profile AND, for students, per role.
+   *
+   * Without the role a student on a shared machine - or on any browser where
+   * nobody has signed in, which is most of them - opened Saved essays and got
+   * every piece the teacher had marked on it. Suppressing the scores was not
+   * enough; the essays themselves were the leak.
+   *
+   * The teacher keys are deliberately unchanged, so nothing already saved
+   * moves or disappears. Only the student gets a new drawer, and it starts
+   * empty.
+   *
+   * This is not a security boundary. It is one browser's localStorage: someone
+   * can switch role, or open devtools, and read the other drawer. A PIN here
+   * would look like protection while providing none.
+   */
+  function shelfKey(session, forRole) {
+    const base = session ? "sr:shelf:v1:" + session.email : "sr:shelf:v1:guest";
+    const who = forRole || role();
+    return who === "student" ? base + ":student" : base;
   }
 
   global.Session = {

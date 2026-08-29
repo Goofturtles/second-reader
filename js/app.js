@@ -101,6 +101,12 @@
        either way - but a marking result sitting in a hidden panel is still a
        marking result sitting in the page, and the point of this design is that
        there is not one. Re-reading as a student computes no bands at all. */
+    /* The shelf is scoped by role now, so the entry on screen belongs to the
+       drawer it was saved in. Carrying its id across would make the next
+       autoSave write a student's work into the teacher's drawer under an id
+       that drawer has never heard of. */
+    state.entryId = null;
+
     if (value === "student" && state.result) {
       state.result = null;
       state.selected = null;
@@ -132,8 +138,8 @@
     if (state.tab === "feedback") paintFeedback();
     render();
     toast(value === "student"
-      ? "Student tools. Class is a teacher's view, so it is put away."
-      : "Teacher tools. Class is back.");
+      ? "Student tools, and your own saved work \u2014 nobody else's."
+      : "Teacher tools, and the set you have been marking.");
     return value;
   }
 
@@ -532,8 +538,7 @@
      again, one row per essay. */
   function shelfLine(e) {
     if (Session.role() === "student") {
-      const w = e.stat && e.stat.words ? e.stat.words + " words" : null;
-      return w || (e.madeAt ? "saved" : "not read yet");
+      return e.madeAt ? "saved" : "not saved yet";
     }
     return e.stat ? e.stat.found + "/" + e.stat.total + " found" : "not read yet";
   }
@@ -2651,7 +2656,7 @@
       '<p class="shelf-head">Saved on this computer</p>' +
       (all.length
         ? '<div class="shelf-list">' + all.map((e) => {
-            const stat = e.stat ? e.stat.found + "/" + e.stat.total + " found" : "not read yet";
+            const stat = shelfLine(e);
             const words = e.text.trim() ? e.text.trim().split(/\s+/).length + " words" : "empty";
             return '<div class="shelf-row' + (e.id === state.entryId ? " on" : "") + '">' +
               '<button class="shelf-open" data-open="' + esc(e.id) + '">' +
@@ -3506,7 +3511,7 @@
         '<div class="gc-list">' + others.slice(0, 20).map((e) =>
           '<button data-cmp="' + esc(e.id) + '"><b>' + esc(e.title) + "</b><span>" +
           esc(e.text.trim().split(/\s+/).length + " words" +
-            (e.stat ? " \u00b7 " + e.stat.found + "/" + e.stat.total + " found" : "")) +
+            (Session.role() === "student" || !e.stat ? "" : " · " + e.stat.found + "/" + e.stat.total + " found")) +
           "</span></button>").join("") + "</div>";
       host.querySelectorAll("[data-cmp]").forEach((b) =>
         b.addEventListener("click", () => { draftAgainst = b.getAttribute("data-cmp"); paintDrafts(); })
@@ -3607,7 +3612,7 @@
       if (e.id === state.entryId) return;
       rows.push({
         g: "Saved essays", icon: "i-file", label: e.title,
-        dim: e.stat ? e.stat.found + "/" + e.stat.total + " found" : "not read yet",
+        dim: shelfLine(e),
         run: () => openEntry(e.id),
       });
     });
