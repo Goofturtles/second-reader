@@ -53,9 +53,15 @@
    * and why Drafts matters more to a student than to anybody.
    */
   const TOOLS = [
-    { id: "evidence", label: "Evidence", roles: ["teacher", "student"] },
-    { id: "feedback", label: "Feedback", roles: ["teacher", "student"] },
-    { id: "ask", label: "Ask", roles: ["teacher", "student"] },
+    /* Evidence, Feedback and Ask are the marking tools. Evidence IS the band
+       array; Feedback IS the sheet that goes out; Ask answers questions about
+       the bands and can write into that sheet. None of the three has a
+       student-safe version - they are the assessment, so they are the
+       teacher's. */
+    { id: "evidence", label: "Evidence", roles: ["teacher"] },
+    { id: "feedback", label: "Feedback", roles: ["teacher"] },
+    { id: "ask", label: "Ask", roles: ["teacher"] },
+    { id: "margin", label: "Margin", roles: ["student"] },
     { id: "signals", label: "Signals", roles: ["teacher", "student"] },
     { id: "class", label: "Class", roles: ["teacher"] },
     { id: "drafts", label: "Drafts", roles: ["teacher", "student"] },
@@ -90,6 +96,24 @@
 
   function setRole(next) {
     const value = Session.setLocalRole(next);
+    /* Becoming a student throws the read away rather than hiding it. The
+       painters are guarded and the panels are hidden, so nothing was on screen
+       either way - but a marking result sitting in a hidden panel is still a
+       marking result sitting in the page, and the point of this design is that
+       there is not one. Re-reading as a student computes no bands at all. */
+    if (value === "student" && state.result) {
+      state.result = null;
+      state.selected = null;
+      state.tutor = null;
+      mg.queue = []; mg.at = 0; mg.log = []; mg.walk = 0; mg.pending = null;
+      const summary = document.getElementById("summary");
+      const findings = document.getElementById("findings");
+      const fb = document.getElementById("fb-body");
+      if (summary) summary.innerHTML = "";
+      if (findings) findings.innerHTML = "";
+      if (fb) fb.innerHTML = "";
+      setMode("write");
+    }
     paintRoleSwap();
     paintRoleCopy();
     paintRoleSwap();
@@ -238,8 +262,38 @@
 
   /* --------------------------------- reading -------------------------------- */
 
+  /*
+   * The student's read. The rubric is not passed in - not emptied later, not
+   * filtered on the way out: never handed over. read() computes its detectors
+   * before it looks at a rubric and then maps over criteria, so an empty array
+   * means statusFor is never called and no band exists anywhere in the result.
+   *
+   * The second reader is not called either. Scoring a rubric is the only thing
+   * it does, and there is no rubric here - so a student's essay never leaves
+   * this machine, whatever keys are configured.
+   */
+  function runTutorRead() {
+    if (docText().length < 40) {
+      toast("Put your essay in first.");
+      setMode("write");
+      const d = document.getElementById("doc");
+      if (d) d.focus();
+      return false;
+    }
+    const r = CloseReader.read(state.work.text, { criteria: [] });
+    if (!r.ok) { toast("There is nothing to read yet."); return false; }
+    state.tutor = { signals: r.signals, sentences: r.sentences };
+    state.result = null;
+    state.stale = false;
+    return true;
+  }
+
   async function runRead() {
     if (state.reading) return;
+    if (Session.role() === "student") {
+      if (runTutorRead()) { setTab("margin"); mgStart(); render(); }
+      return;
+    }
 
     /* Say which of the two halves is missing and put the caret in it, rather
        than refusing with a disabled button and no explanation. */
@@ -468,12 +522,28 @@
   }
 
   /* The result colours the rows without rebuilding them. */
+  /* Saved essays are listed in four places and every one of them printed
+     "3/5 found" beside the title. For a student that is the fraction back
+     again, one row per essay. */
+  function shelfLine(e) {
+    if (Session.role() === "student") {
+      const w = e.stat && e.stat.words ? e.stat.words + " words" : null;
+      return w || (e.madeAt ? "saved" : "not read yet");
+    }
+    return e.stat ? e.stat.found + "/" + e.stat.total + " found" : "not read yet";
+  }
+
   function paintRailStatus() {
     const rows = document.querySelectorAll("#crits .crit");
     rows.forEach((row, i) => {
       const c = state.rubric.criteria[i];
       const found = state.result && c ? state.result.criteria.find((x) => x.id === c.id) : null;
-      row.setAttribute("data-tone", found ? (found.flagged ? "flag" : TONE[found.status]) : "idle");
+      /* The rail is where the teacher's checklist lives, and for a student it
+         stays exactly that: their words, unlit. Nothing in it is scored,
+         because in student mode nothing was scored. */
+      row.setAttribute("data-tone",
+        Session.role() === "student" ? "idle"
+          : found ? (found.flagged ? "flag" : TONE[found.status]) : "idle");
       row.classList.toggle("is-open", !!(found && found.id === state.selected));
     });
   }
@@ -535,7 +605,7 @@
 
     const tc = document.getElementById("tab-count");
     if (tc) {
-      tc.hidden = !state.result;
+      tc.hidden = !state.result || Session.role() === "student";
       if (state.result) {
         const cs = state.result.criteria;
         const found = cs.filter((c) => c.status === "evidenced").length;
@@ -644,7 +714,13 @@
     wrap.querySelectorAll("[data-mode]").forEach((b) => {
       const m = b.getAttribute("data-mode");
       b.setAttribute("aria-pressed", m === state.mode ? "true" : "false");
-      b.disabled = (m === "read" || m === "all") && !state.result;
+      /* Marked and All paint the criteria onto the sentences - which criterion
+         each line answered, and by absence which ones nothing answered. That is
+         the assessment drawn on the essay, so a student does not get either
+         view. The Margin highlights one sentence at a time instead. */
+      const marking = (m === "read" || m === "all");
+      b.hidden = marking && Session.role() === "student";
+      b.disabled = marking && !state.result;
     });
   }
 
@@ -747,6 +823,11 @@
     const host = document.getElementById("fb-body");
     const foot = document.getElementById("fb-foot");
     if (!host) return;
+    if (Session.role() === "student") {
+      host.innerHTML = "";
+      if (foot) foot.hidden = true;
+      return;
+    }
 
     /* A student has one sheet, so the control that picks between two goes -
        and its labels were written from the marker's chair anyway: "For the
@@ -964,8 +1045,10 @@
 
   function setTab(name) {
     /* Falling back rather than refusing: a role switch while Class is open has
-       to land somewhere, and Evidence is the tool both roles always have. */
-    state.tab = toolAllowed(name) ? name : "evidence";
+       to land somewhere. There is no longer a tool both roles share, so it is
+       whichever comes first for this role - Evidence for a teacher, Margin for
+       a student. */
+    state.tab = toolAllowed(name) ? name : (toolsFor()[0] || { id: "signals" }).id;
     paintTabs();
     name = state.tab;
     /* A hidden panel measures as nothing, so the sheet was sized to its
@@ -974,6 +1057,7 @@
     /* Painted on the way in rather than on every render: each one reads the
        whole shelf or re-measures the essay, and neither is worth doing while
        somebody is typing. */
+    if (name === "margin") paintMargin();
     if (name === "signals") paintSignals();
     if (name === "class") paintClass();
     if (name === "drafts") paintDrafts();
@@ -992,11 +1076,21 @@
       const p = document.getElementById("panel-" + t.id);
       if (p) p.hidden = state.tab !== t.id;
     });
+    /* The Ask composer lives under the ESSAY rather than inside the Ask panel,
+       so hiding the tab left the box sitting there submitting into a panel the
+       student does not have. */
+    const dock = document.getElementById("askdock");
+    if (dock) dock.hidden = !toolAllowed("ask");
   }
 
   function paintSummary() {
     const host = document.getElementById("summary");
     if (!host) return;
+    /* Belt and braces. state.result is already null for a student, so this
+       cannot fire - but these three painters are the ones that would draw the
+       assessment if it ever came back, and an assertion here is cheaper than
+       finding out from a screenshot. */
+    if (Session.role() === "student") { host.innerHTML = ""; return; }
     if (!state.result || !state.rubric) { host.innerHTML = ""; return; }
 
     const cs = state.result.criteria;
@@ -1116,6 +1210,7 @@
   function paintFindings(force) {
     const host = document.getElementById("findings");
     if (!host) return;
+    if (Session.role() === "student") { host.innerHTML = ""; return; }
     if (!force && host.contains(document.activeElement)) return;
 
     paintSummary();
@@ -1553,7 +1648,7 @@
         (all.length
           ? '<div class="ac-work">' + all.slice(0, 6).map((e) =>
               '<div class="ac-work-row"><div><b>' + esc(e.title) + "</b><span>" +
-              esc(e.stat ? e.stat.found + "/" + e.stat.total + " found" : "not read yet") +
+              esc(shelfLine(e)) +
               (e.source === "classroom" && e.meta ? " \u00b7 " + esc(e.meta.course) : "") + "</span></div>" +
               '<button class="link-quiet" data-open-entry="' + esc(e.id) + '">Open</button></div>'
             ).join("") + (all.length > 6 ? '<p class="ac-more">and ' + (all.length - 6) + " more</p>" : "") + "</div>"
@@ -2838,6 +2933,261 @@
       "<p>Whatever is left needs a paragraph rather than a word. Open Evidence.</p></div>";
   }
 
+
+  /* ======================================================== THE MARGIN =====
+   *
+   * The student's tutor. See the note at the top of this section in the commit
+   * message; the three rules it lives by are: it never finishes, it never
+   * praises or corrects, and it never mentions what it skipped.
+   */
+
+  const mg = { queue: [], at: 0, log: [], walk: 0, focus: null };
+
+  /* countPhrases (js/engine.js) uses indexOf, so it matches inside words - "so"
+     fires on "also", "Some" and "something". Every hit is checked for real word
+     boundaries before it becomes a question, because a tutor that asks about a
+     word which is not there is worse than one that misses it. */
+  function mgWhole(text, phrase, at) {
+    const before = at > 0 ? text[at - 1] : " ";
+    const after = text[at + phrase.length] || " ";
+    return !/[A-Za-z0-9]/.test(before) && !/[A-Za-z0-9]/.test(after);
+  }
+
+  function mgSentenceAt(i) {
+    const ss = (state.tutor && state.tutor.sentences) || [];
+    return ss.find((s) => i >= s.start && i < s.end) || null;
+  }
+
+  /* Every probe is { kind, start, ask, chips }. start is a real offset into the
+     essay, which is what pins the question to a sentence and lets the document
+     highlight it. */
+  function mgProbes() {
+    const t = state.tutor;
+    if (!t) return [];
+    const text = state.work.text;
+    const sents = t.sentences || [];
+    const s = t.signals || {};
+    const out = [];
+    const used = new Set();
+
+    const push = (kind, sent, ask, chips) => {
+      if (!sent || used.has(kind + ":" + sent.start)) return;
+      used.add(kind + ":" + sent.start);
+      out.push({ kind: kind, start: sent.start, ask: ask, chips: chips || [] });
+    };
+
+    const hits = (block) => ((block && block.hits) || [])
+      .filter((h) => mgWhole(text, h.phrase, h.at));
+
+    /* An objection raised and then left. Same two-sentence window the engine
+       uses to decide whether a concession was answered. */
+    const ANSWERED = /\b(but|however|yet|still|even so|the problem|that said)\b/i;
+    for (const h of hits(s.concession)) {
+      const host = mgSentenceAt(h.at);
+      if (!host) continue;
+      const after = sents.slice(host.i + 1, host.i + 3);
+      if (after.some((n) => ANSWERED.test(n.text))) continue;
+      push("hanging", host,
+        "You put the other side here. What are the next two sentences doing about it?",
+        ["I answer it later", "I meant to and did not", "It does not need answering"]);
+    }
+
+    for (const h of hits(s.vagueSourcing)) {
+      const host = mgSentenceAt(h.at);
+      push("source", host,
+        "\u201c" + h.phrase + "\u201d is standing where a source goes. Who found this, and when?",
+        ["I know the source", "I read it somewhere", "I am not sure"]);
+    }
+
+    for (const h of hits(s.hedging)) {
+      const host = mgSentenceAt(h.at);
+      push("cushion", host,
+        "Read this without \u201c" + h.phrase + "\u201d. Does it still say what you meant?",
+        ["Yes, cut it", "No, I am unsure of it", "No, I need to say why"]);
+    }
+
+    /* A sentence you run out of breath in. A property of that one span, not a
+       count over the essay. */
+    for (const sent of sents) {
+      const words = sent.text.split(/\s+/).length;
+      if (words >= 34) {
+        push("long", sent,
+          "This one runs " + words + " words. Where would you put the full stop?",
+          ["Split it in two", "It reads fine aloud"]);
+      }
+    }
+
+    if (sents.length) {
+      push("first", sents[0],
+        "This is the first thing your reader meets. What do you want them thinking after it?", []);
+      push("last", sents[sents.length - 1],
+        "This is the last thing they read. Is it the thing you most want to leave them with?",
+        ["Yes", "No, it should be earlier"]);
+    }
+
+    /* Document order, so the tutor reads the essay the way the student wrote
+       it rather than in order of how bad anything is. There is no ranking here
+       and there is deliberately no severity. */
+    out.sort((x, y) => x.start - y.start);
+
+    /* One per checklist row, unconditionally, in the teacher's order, and
+       FIRST - the most useful thing a student can be asked is what their
+       teacher actually asked for, and asking it makes the rail mean
+       something. The condition is what would leak a band; there is none here,
+       so every row is asked whether it was evidenced or not. */
+    const point = [];
+    for (const c of liveCriteria()) {
+      if (!c.name) continue;
+      point.push({ kind: "point", start: null, crit: c.name,
+        ask: "Your teacher wrote “" + c.name + "”. Which sentence would you point at for that?",
+        chips: [] });
+    }
+    return point.concat(out);
+  }
+
+  /* When the specific questions run out the tutor keeps walking the essay, one
+     sentence at a time, forever. This is the clause a naive build fails last:
+     running out of questions is a clean bill of health, and a clean bill of
+     health is a mark. */
+  function mgWalkProbe() {
+    const sents = (state.tutor && state.tutor.sentences) || [];
+    if (!sents.length) return null;
+    const sent = sents[mg.walk % sents.length];
+    mg.walk += 1;
+    return { kind: "walk", start: sent.start,
+      ask: "What is this sentence doing for the paragraph it is in?",
+      chips: ["It makes the point", "It backs the point up", "I am not sure it is doing anything"] };
+  }
+
+  function mgNext() {
+    const probe = mg.at < mg.queue.length ? mg.queue[mg.at++] : mgWalkProbe();
+    if (!probe) return;
+    mg.log.push({ who: "mg", probe: probe });
+    mg.focus = probe.start;
+    paintMargin();
+    paintDoc();
+    if (probe.start != null) jumpTo(probe.start);
+  }
+
+  function mgStart() {
+    mg.queue = mgProbes();
+    mg.at = 0; mg.walk = 0; mg.log = [];
+    mgNext();
+  }
+
+  function paintMargin() {
+    const log = document.getElementById("mg-log");
+    const chips = document.getElementById("mg-chips");
+    if (!log) return;
+
+    if (!state.tutor) {
+      log.innerHTML = '<div class="empty"><h3>Put your essay in, then press Ask me something.</h3>' +
+        "<p>I will ask you about one sentence at a time. I will not tell you how you did, " +
+        "because I do not work that out \u2014 nothing here is marked.</p></div>";
+      if (chips) chips.innerHTML = "";
+      return;
+    }
+
+    log.innerHTML = mg.log.map((m) => {
+      if (m.who === "you") return '<div class="mg-you"><p>' + esc(m.text) + "</p></div>";
+      const p = m.probe;
+      const sent = p.start == null ? null : mgSentenceAt(p.start);
+      return '<div class="mg-ask">' +
+        (sent ? '<button class="quote" data-jump="' + p.start + '">' + esc(sent.text) + "</button>" : "") +
+        "<p>" + esc(p.ask) + "</p></div>";
+    }).join("");
+    log.scrollTop = log.scrollHeight;
+
+    const last = mg.log.filter((m) => m.who === "mg").pop();
+    if (chips) {
+      chips.innerHTML = ((last && last.probe.chips) || [])
+        .map((c) => '<button data-mg-chip="' + esc(c) + '">' + esc(c) + "</button>").join("") +
+        '<button data-mg-skip>Ask me a different one</button>';
+    }
+
+    /* A rewrite goes back into the essay, so the box is prefilled with the
+       sentence being asked about - the student edits their own line rather
+       than retyping it. */
+    const say = document.getElementById("mg-say");
+    if (say && last && last.probe.start != null && !say.value) {
+      const sent = mgSentenceAt(last.probe.start);
+      say.placeholder = sent ? "Answer, or rewrite the line\u2026" : "Answer in your own words\u2026";
+    }
+  }
+
+  function mgSay(text) {
+    const said = String(text || "").trim();
+    if (!said) return;
+    mg.log.push({ who: "you", text: said });
+
+    /* The only thing a typed answer does is choose the next question. It is
+       never judged, because a tutor that can say "right" can be A/B-ed one
+       sentence at a time until it has spelled out the marking. */
+    const last = mg.log.filter((m) => m.who === "mg").pop();
+    const sent = last && last.probe.start != null ? mgSentenceAt(last.probe.start) : null;
+    if (sent && said.length > 24 && /[.!?]$/.test(said) && said !== sent.text) {
+      /* It looks like a rewrite of the line rather than an answer about it, so
+         offer to put it in the essay. Offered, never applied silently. */
+      mg.log.push({ who: "mg", probe: { kind: "swap", start: sent.start,
+        ask: "Do you want that in the essay in place of the line above?",
+        chips: ["Put it in", "Leave it"], swap: said } });
+      mg.pending = { start: sent.start, end: sent.end, text: said };
+      paintMargin();
+      return;
+    }
+    mgNext();
+  }
+
+  function mgApplySwap() {
+    const p = mg.pending;
+    if (!p) return;
+    const text = state.work.text;
+    state.work.text = text.slice(0, p.start) + p.text + text.slice(p.end);
+    mg.pending = null;
+    /* The offsets under the queue have all moved, so it is rebuilt rather than
+       patched - an off-by-one here would highlight the wrong sentence, which is
+       worse than losing your place. */
+    /* paintDoc writes state.work.text back into the element when the two have
+       diverged, which is exactly the case here. */
+    const doc = document.getElementById("doc");
+    if (doc) doc.textContent = state.work.text;
+    runTutorRead();
+    mgStart();
+    render();
+    toast("Put in. The questions start again from the top of the essay.");
+  }
+
+  function wireMargin() {
+    const form = document.getElementById("mg-form");
+    const say = document.getElementById("mg-say");
+    const chips = document.getElementById("mg-chips");
+    const log = document.getElementById("mg-log");
+
+    if (form) form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!say) return;
+      const v = say.value; say.value = "";
+      mgSay(v);
+    });
+    if (say) say.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+    if (chips) chips.addEventListener("click", (e) => {
+      const skip = e.target.closest("[data-mg-skip]");
+      if (skip) { mg.pending = null; return mgNext(); }
+      const b = e.target.closest("[data-mg-chip]");
+      if (!b) return;
+      const label = b.getAttribute("data-mg-chip");
+      if (label === "Put it in") return mgApplySwap();
+      if (label === "Leave it") { mg.pending = null; return mgNext(); }
+      mgSay(label);
+    });
+    if (log) log.addEventListener("click", (e) => {
+      const q = e.target.closest("[data-jump]");
+      if (q) jumpTo(Number(q.getAttribute("data-jump")));
+    });
+  }
+
   function paintSignals() {
     const host = document.getElementById("signals-body");
     if (!host) return;
@@ -3265,7 +3615,7 @@
       state.result.criteria.forEach((c) => {
         rows.push({
           g: "Your checklist", icon: "i-check",
-          label: c.name, dim: LABEL[c.status] + (c.flagged ? " \u00b7 worth a second look" : ""),
+          label: c.name, dim: Session.role() === "student" ? "" : LABEL[c.status] + (c.flagged ? " \u00b7 worth a second look" : ""),
           run: () => { state.selected = c.id; setMode("read"); setTab("evidence"); render(); const e = c.evidence[0]; if (e) jumpTo(e.start); },
         });
       });
@@ -3738,6 +4088,7 @@
       wireRail();
       wireTabs();
       wireRoleSwap();
+      wireMargin();
       wireAsk();
       wireFeedback();
       wireBar();

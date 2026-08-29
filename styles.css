@@ -4226,3 +4226,41 @@ mark.ev.flag { background: var(--hl-here-act); box-shadow: none; }
 /* The bar is already crowded; below the wide breakpoint the label goes and the
    overflow menu keeps carrying the switch for narrow screens. */
 @media (max-width: 1180px) { .role-swap { display: none; } }
+
+/* ==========================================================================
+   THE MARGIN
+
+   The student's tutor. One question, one sentence, and a box. It reuses the
+   Ask composer wholesale — .composer, .composer-input, .composer-send and
+   .ask-chips are all as they are in Ask — so this is only the column and the
+   two kinds of turn.
+   ========================================================================== */
+
+.mg { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.mg-log {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-gutter: stable;
+  padding: 14px 15px 8px; display: grid; gap: 16px; align-content: start;
+}
+.mg-foot { flex: none; padding: 10px 15px 14px; border-top: 1px solid var(--line); }
+.mg-foot .ask-chips { padding: 0 0 10px; border-top: 0; }
+
+/* The question. The quoted sentence sits above it, because the sentence is
+   what the question is about and reading it first is the point. */
+.mg-ask .quote { display: block; width: 100%; text-align: left; margin-bottom: 9px; }
+.mg-ask p {
+  margin: 0; font-size: 14px; line-height: 1.65; color: var(--ink);
+}
+/* What the student said back. Right-aligned so a glance down the column shows
+   the shape of the conversation. */
+.mg-you {
+  justify-self: end; max-width: 86%;
+  padding: 9px 13px; border-radius: 14px 14px 4px 14px;
+  background: var(--panel-2);
+}
+.mg-you p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+
+/* #btn-read.is-ready hardcodes color:#fff on var(--accent). In light that is
+   white on oxblood and fine; in dark --accent is a pale pink and the same rule
+   gives white on pink at 2.59:1 — a fail, on the one button the whole app is
+   built around pressing. Dark gets ink on the pale accent instead: 8.9:1. */
+:root[data-theme="dark"] #btn-read.is-ready { color: #2a0f12; }

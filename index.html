@@ -37,7 +37,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://images.pexels.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Newsreader:opsz,wght@6..72,400..600&display=swap">
-<link rel="stylesheet" href="styles.css?v=20260826-2">
+<link rel="stylesheet" href="styles.css?v=20260829-4">
 <link rel="icon" href="second-reader-favicon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -603,6 +603,7 @@
             <svg class="tab-spark" aria-hidden="true"><use href="#i-spark"/></svg>Ask
             <span class="tab-count" id="ask-count" hidden></span>
           </button>
+          <button role="tab" id="tab-margin" data-tab="margin" aria-selected="false" aria-controls="panel-margin">Margin</button>
           <button role="tab" id="tab-signals" data-tab="signals" aria-selected="false" aria-controls="panel-signals">Signals</button>
           <button role="tab" id="tab-class" data-tab="class" aria-selected="false" aria-controls="panel-class">Class</button>
           <button role="tab" id="tab-drafts" data-tab="drafts" aria-selected="false" aria-controls="panel-drafts">Drafts</button>
@@ -617,6 +618,26 @@
 
         <!-- Three closer looks at the same essay. They were dialogs behind the
              overflow menu, which is where things go to not be found. -->
+        <!-- The student's tutor. One question, one sentence, and no way to
+             reach the end of it. -->
+        <div class="side-panel" id="panel-margin" role="tabpanel" aria-labelledby="tab-margin" tabindex="0" hidden>
+          <div class="mg">
+            <div class="mg-log" id="mg-log" role="log" aria-live="polite" aria-relevant="additions"
+                 aria-label="Questions about your writing"></div>
+            <div class="mg-foot">
+              <div class="ask-chips" id="mg-chips"></div>
+              <form class="composer" id="mg-form">
+                <label class="sr-only" for="mg-say">Your answer</label>
+                <textarea id="mg-say" class="composer-input" rows="1" spellcheck="false"
+                          placeholder="Answer in your own words, or rewrite the line…"></textarea>
+                <button class="composer-send" id="mg-send" type="submit" aria-label="Answer">
+                  <svg aria-hidden="true"><use href="#i-up"/></svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
         <div class="side-panel" id="panel-signals" role="tabpanel" aria-labelledby="tab-signals" tabindex="0" hidden>
           <div class="side-scroll" id="signals-body"></div>
         </div>
@@ -709,19 +730,19 @@
 
 <div id="layer"></div>
 
-<script src="js/data.js?v=20260826-2"></script>
-<script src="js/engine.js?v=20260826-2"></script>
-<script src="js/ondevice.js?v=20260826-2"></script>
-<script src="js/readers.js?v=20260826-2"></script>
-<script src="js/session.js?v=20260826-2"></script>
-<script src="js/signals.js?v=20260826-2"></script>
-<script src="js/shelf.js?v=20260826-2"></script>
-<script src="js/classroom.js?v=20260826-2"></script>
-<script src="js/markdown.js?v=20260826-2"></script>
-<script src="js/ui.js?v=20260826-2"></script>
-<script src="js/landing.js?v=20260826-2"></script>
-<script src="js/auth.js?v=20260826-2"></script>
-<script src="js/app.js?v=20260826-2"></script>
-<script src="js/main.js?v=20260826-2"></script>
+<script src="js/data.js?v=20260829-4"></script>
+<script src="js/engine.js?v=20260829-4"></script>
+<script src="js/ondevice.js?v=20260829-4"></script>
+<script src="js/readers.js?v=20260829-4"></script>
+<script src="js/session.js?v=20260829-4"></script>
+<script src="js/signals.js?v=20260829-4"></script>
+<script src="js/shelf.js?v=20260829-4"></script>
+<script src="js/classroom.js?v=20260829-4"></script>
+<script src="js/markdown.js?v=20260829-4"></script>
+<script src="js/ui.js?v=20260829-4"></script>
+<script src="js/landing.js?v=20260829-4"></script>
+<script src="js/auth.js?v=20260829-4"></script>
+<script src="js/app.js?v=20260829-4"></script>
+<script src="js/main.js?v=20260829-4"></script>
 </body>
 </html>
