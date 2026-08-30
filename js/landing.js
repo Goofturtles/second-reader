@@ -208,6 +208,100 @@
     }
   }
 
+
+  /* ------------------------------ the hero marks --------------------------
+   *
+   * A sentence from the invented example essay marks itself: wash, underline,
+   * verdict chip, handwritten aside - then the next one. Three slides, three
+   * states, so the hero teaches the vocabulary the legend repeats below.
+   *
+   * Everything here defers to prefers-reduced-motion: one slide, fully
+   * settled, no cycle, no parallax.
+   */
+  const DEMO = [
+    { pre: "", mark: "I think the ban is right, but not for the reason most people give.",
+      post: "", tone: "var(--ok)", wash: "var(--hl-ok)",
+      chip: "Claim \u00b7 found it", note: "states the position \u2014 and holds it" },
+    { pre: "Everyone knows that phones are distracting and ",
+      mark: "studies show", post: " that they make it harder to learn.",
+      tone: "var(--mid)", wash: "var(--hl-mid)",
+      chip: "Evidence \u00b7 half there", note: "\u201cstudies show\u201d is standing in for a source" },
+    { pre: "", mark: "Some people might say that phones are useful for looking things up.",
+      post: "", tone: "var(--flag)", wash: "var(--hl-flag)",
+      chip: "Counterargument \u00b7 check this one", note: "the two readers disagree here" },
+  ];
+
+  function heroDemo() {
+    const host = document.getElementById("hero-demo");
+    if (!host) return;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let at = 0, timer = null;
+
+    const card = (d) =>
+      '<div class="dm-card" style="--t:' + d.tone + ';--w:' + d.wash + ';--u:' + d.tone + '">' +
+        '<p class="dm-quote">' + esc(d.pre) +
+          '<span class="dm-mark">' + esc(d.mark) + "</span>" + esc(d.post) + "</p>" +
+        '<div class="dm-foot">' +
+          '<span class="dm-chip"><i></i>' + esc(d.chip) + "</span>" +
+          '<span class="dm-note">' + esc(d.note) + "</span>" +
+        "</div>" +
+      "</div>" +
+      '<div class="dm-dots">' + DEMO.map((_, i) =>
+        "<i" + (i === at ? ' class="on"' : "") + "></i>").join("") + "</div>";
+
+    const show = () => { host.innerHTML = card(DEMO[at]); };
+    show();
+    if (still) return;
+
+    const advance = () => {
+      const c = host.querySelector(".dm-card");
+      if (c) c.classList.add("out");
+      setTimeout(() => { at = (at + 1) % DEMO.length; show(); }, 330);
+    };
+    const arm = () => { timer = setInterval(advance, 4800); };
+    arm();
+    /* Hovering means reading; reading means do not yank it away. */
+    host.addEventListener("mouseenter", () => { clearInterval(timer); timer = null; });
+    host.addEventListener("mouseleave", () => { if (!timer) arm(); });
+  }
+
+  /* ------------------------------ the desk drifts -------------------------
+   * Three depths, one lerp. Touch devices and reduced motion sit it out.
+   */
+  function heroParallax() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (matchMedia("(hover: none)").matches) return;
+    const hero = document.querySelector(".hero");
+    if (!hero) return;
+    const layers = [
+      [document.querySelector(".prop-books"), 10],
+      [document.querySelector(".prop-pen"), 16],
+      [document.querySelector(".prop-specs"), 7],
+    ].filter((p) => p[0]);
+    if (!layers.length) return;
+
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = null;
+    const step = () => {
+      cx += (tx - cx) * 0.06;
+      cy += (ty - cy) * 0.06;
+      for (const [el, depth] of layers) {
+        el.style.transform = "translate(" + (cx * depth).toFixed(1) + "px," + (cy * depth).toFixed(1) + "px)";
+      }
+      if (Math.abs(tx - cx) + Math.abs(ty - cy) > 0.001) raf = requestAnimationFrame(step);
+      else raf = null;
+    };
+    hero.addEventListener("mousemove", (e) => {
+      const r = hero.getBoundingClientRect();
+      tx = (e.clientX - r.left) / r.width - 0.5;
+      ty = (e.clientY - r.top) / r.height - 0.5;
+      if (!raf) raf = requestAnimationFrame(step);
+    });
+    hero.addEventListener("mouseleave", () => {
+      tx = 0; ty = 0;
+      if (!raf) raf = requestAnimationFrame(step);
+    });
+  }
+
   /* ---------------------------------- mount --------------------------------- */
 
   let built = false;
@@ -219,6 +313,8 @@
       fillFaq();
       wirePreview();
       guardPhotos();
+      heroDemo();
+      heroParallax();
     }
     watchReveals(document.getElementById("view-landing"));
   }

@@ -4264,3 +4264,113 @@ mark.ev.flag { background: var(--hl-here-act); box-shadow: none; }
    gives white on pink at 2.59:1 — a fail, on the one button the whole app is
    built around pressing. Dark gets ink on the pale accent instead: 8.9:1. */
 :root[data-theme="dark"] #btn-read.is-ready { color: #2a0f12; }
+
+
+/* ==========================================================================
+   HERO, LOUDER
+
+   Wispr Flow's scale, Giga's self-labelling sentence, Sana's cycle. The
+   headline grows, "proof" earns a marker-pen ring on top of its wash, the
+   props drift toward the cursor, and a sentence under the CTA marks itself
+   through the three states before anyone has scrolled.
+   ========================================================================== */
+
+h1.hero-title {
+  font-size: clamp(42px, 6.8vw, 84px);
+  letter-spacing: -0.042em;
+  line-height: 1.03;
+}
+
+/* --- the ring -------------------------------------------------------------
+   The wash is the first gesture a marker makes; the loop around the word is
+   the second. Drawn with dashoffset after the swipe lands, in the accent -
+   pen ink, not highlighter. */
+.hero-title .marked { position: relative; }
+.hero-title .ring {
+  position: absolute; left: -0.14em; right: -0.14em; top: -0.1em; bottom: -0.16em;
+  width: calc(100% + 0.28em); height: calc(100% + 0.26em);
+  overflow: visible; pointer-events: none;
+}
+.hero-title .ring path {
+  fill: none; stroke: var(--accent); stroke-width: 3.2px;
+  stroke-linecap: round; vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: ringDraw 0.7s cubic-bezier(0.65, 0, 0.35, 1) 1.75s forwards;
+  opacity: 0.85;
+}
+@keyframes ringDraw { to { stroke-dashoffset: 0; } }
+
+/* --- the sentence that marks itself -------------------------------------- */
+
+.hero-demo {
+  margin: 44px auto 0; max-width: 620px; min-height: 132px;
+  text-align: left; position: relative;
+}
+.dm-card {
+  padding: 20px 24px 18px; border-radius: 16px;
+  border: 1px solid var(--line); background: var(--panel);
+  box-shadow: 0 1px 2px rgba(30, 26, 22, 0.05), 0 14px 34px -14px rgba(30, 26, 22, 0.18);
+  animation: dmIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+:root[data-theme="dark"] .dm-card { box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.55); }
+.dm-card.out { animation: dmOut 0.32s ease both; }
+@keyframes dmIn { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes dmOut { to { opacity: 0; transform: translateY(-10px) scale(0.99); } }
+
+.dm-quote {
+  font-family: var(--font-serif); font-size: 17.5px; line-height: 1.65;
+  color: var(--ink);
+}
+/* The wash sweeps left to right, exactly the treatment the essay gets in the
+   app. --w and --u are set per slide from the three state colours. */
+.dm-mark {
+  padding: 1px 2px; border-radius: 3px;
+  background-image: linear-gradient(var(--u), var(--u)), linear-gradient(var(--w), var(--w));
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 1.28em, 0 0.08em;
+  background-size: 0% 2px, 0% 1.2em;
+  animation: dmSwipe 0.55s cubic-bezier(0.65, 0, 0.35, 1) 0.25s forwards;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+@keyframes dmSwipe { to { background-size: 100% 2px, 100% 1.2em; } }
+
+.dm-foot {
+  margin-top: 13px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.dm-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 11px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--t) 34%, transparent);
+  background: color-mix(in srgb, var(--t) 9%, transparent);
+  font-size: 12px; font-weight: 600; color: var(--t); line-height: 1.5;
+  opacity: 0; transform: translateY(6px) scale(0.94);
+  animation: dmPop 0.4s cubic-bezier(0.2, 1.2, 0.35, 1) 0.85s forwards;
+}
+.dm-chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+@keyframes dmPop { to { opacity: 1; transform: none; } }
+
+.dm-note {
+  font-family: "Caveat", ui-rounded, cursive; font-size: 17px; line-height: 1.3;
+  color: var(--accent-text);
+  opacity: 0; animation: dmFade 0.5s ease 1.1s forwards;
+}
+@keyframes dmFade { to { opacity: 1; } }
+
+/* The three dots under the card say where the cycle is without counting
+   anything - the same quiet device every carousel uses. */
+.dm-dots { display: flex; gap: 6px; justify-content: center; margin-top: 14px; }
+.dm-dots i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+.dm-dots i.on { background: var(--accent); transform: scale(1.25); }
+
+@media (max-width: 640px) {
+  .hero-demo { min-height: 176px; margin-top: 34px; }
+  .dm-quote { font-size: 15.5px; }
+}
+
+/* --- the props wake up ----------------------------------------------------
+   Driven from JS with a lerp; the CSS only promises not to jank. */
+.props img { will-change: transform; }
