@@ -4303,7 +4303,11 @@ h1.hero-title {
 /* --- the sentence that marks itself -------------------------------------- */
 
 .hero-demo {
-  margin: 44px auto 0; max-width: 620px; min-height: 132px;
+  /* min-height fits the TALLEST of the three slides, measured, so the cycle
+     never shifts the layout under it - a shift every 4.8s is exactly the kind
+     of input-independent movement CLS punishes. Verified against slide 2 (the
+     long quote) at both breakpoints by the probe. */
+  margin: 44px auto 0; max-width: 620px; min-height: 166px;
   text-align: left; position: relative;
 }
 .dm-card {
@@ -4367,10 +4371,10 @@ h1.hero-title {
 .dm-dots i.on { background: var(--accent); transform: scale(1.25); }
 
 @media (max-width: 640px) {
-  .hero-demo { min-height: 176px; margin-top: 34px; }
+  .hero-demo { min-height: 232px; margin-top: 34px; }
   .dm-quote { font-size: 15.5px; }
 }
 
-/* --- the props wake up ----------------------------------------------------
-   Driven from JS with a lerp; the CSS only promises not to jank. */
-.props img { will-change: transform; }
+/* The props' will-change lives in js/landing.js, applied only when the
+   parallax actually arms - reduced-motion and touch users never pay for
+   composited layers they cannot see move. */
