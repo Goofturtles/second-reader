@@ -4295,8 +4295,17 @@ h1.hero-title {
      .marked's inline-block box, which is the word. */
   position: absolute; left: -0.22em; top: -0.26em;
   width: calc(100% + 0.62em); height: calc(100% + 0.5em);
+  /* The global svg:not([width]):not([height]) { max-width: 100% } guard - the
+     one that stops unsized icons exploding to 300x150 - was clamping this very
+     deliberate overhang back to the word's own width, so the loop could never
+     wrap the final letters. Height has no such clamp, which is why only the
+     width misbehaved. */
   overflow: visible; pointer-events: none;
 }
+/* svg.ring, not .ring: the guard's two :not([attr]) clauses give it
+   specificity (0,2,1), so a two-class selector loses to it wherever it sits in
+   the file. This one ties it and wins on order. */
+.hero-title svg.ring { max-width: none; }
 .hero-title .ring path {
   fill: none; stroke: var(--accent);
   /* User units, not non-scaling-stroke: with a screen-space stroke Chrome also
