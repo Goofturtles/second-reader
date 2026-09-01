@@ -422,15 +422,16 @@ h1.hero-title {
 .hero-title .marked {
   white-space: nowrap;
   padding: 0 0.06em;
-  background-image:
-    linear-gradient(var(--ok), var(--ok)),
-    linear-gradient(var(--hl-ok), var(--hl-ok));
-  background-repeat: no-repeat, no-repeat;
-  background-position: 0 0.94em, 0 0.1em;
-  background-size: 0% 0.055em, 0% 0.86em;
+  /* The wash alone. There used to be a rule under the word as well, but once
+     the pen ring arrived that was the same statement twice - highlighter says
+     "this", pen circles it, and an underline in between was clutter. */
+  background-image: linear-gradient(var(--hl-ok), var(--hl-ok));
+  background-repeat: no-repeat;
+  background-position: 0 0.1em;
+  background-size: 0% 0.86em;
   animation: swipe 0.6s cubic-bezier(0.65, 0, 0.35, 1) 1.05s forwards;
 }
-@keyframes swipe { to { background-size: 100% 0.055em, 100% 0.86em; } }
+@keyframes swipe { to { background-size: 100% 0.86em; } }
 
 
 .hero-sub { margin: 20px auto 0; max-width: 40ch; color: var(--ink-2); font-size: 16px; line-height: 1.68; }
@@ -4285,18 +4286,28 @@ h1.hero-title {
    The wash is the first gesture a marker makes; the loop around the word is
    the second. Drawn with dashoffset after the swipe lands, in the accent -
    pen ink, not highlighter. */
-.hero-title .marked { position: relative; }
+.hero-title .marked { position: relative; display: inline-block; }
 .hero-title .ring {
-  position: absolute; left: -0.14em; right: -0.14em; top: -0.1em; bottom: -0.16em;
-  width: calc(100% + 0.28em); height: calc(100% + 0.26em);
+  /* Explicit sizes, not opposing insets: an absolutely positioned REPLACED
+     element (which an <svg> is) ignores right/bottom when width/height are
+     auto and falls back to its 300x150 intrinsic default - the ring rendered
+     as a squashed loop floating over the word. Percentages resolve against
+     .marked's inline-block box, which is the word. */
+  position: absolute; left: -0.22em; top: -0.26em;
+  width: calc(100% + 0.62em); height: calc(100% + 0.5em);
   overflow: visible; pointer-events: none;
 }
 .hero-title .ring path {
-  fill: none; stroke: var(--accent); stroke-width: 3.2px;
-  stroke-linecap: round; vector-effect: non-scaling-stroke;
+  fill: none; stroke: var(--accent);
+  /* User units, not non-scaling-stroke: with a screen-space stroke Chrome also
+     computes the DASH in screen units, which breaks pathLength normalisation -
+     the draw stopped 40% of the way round however the numbers were tuned. The
+     viewBox matches the rendered aspect, so user units stay honest. */
+  stroke-width: 4.2;
+  stroke-linecap: round;
   stroke-dasharray: 1; stroke-dashoffset: 1;
-  animation: ringDraw 0.7s cubic-bezier(0.65, 0, 0.35, 1) 1.75s forwards;
-  opacity: 0.85;
+  animation: ringDraw 0.8s cubic-bezier(0.6, 0, 0.3, 1) 1.75s forwards;
+  opacity: 0.9;
 }
 @keyframes ringDraw { to { stroke-dashoffset: 0; } }
 

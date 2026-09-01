@@ -272,50 +272,6 @@
     host.addEventListener("mouseleave", () => { if (!timer) arm(); });
   }
 
-  /* ------------------------------ the desk drifts -------------------------
-   * Three depths, one lerp. Touch devices and reduced motion sit it out.
-   */
-  function heroParallax() {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (matchMedia("(hover: none)").matches) return;
-    const hero = document.querySelector(".hero");
-    if (!hero) return;
-    const layers = [
-      [document.querySelector(".prop-books"), 10],
-      [document.querySelector(".prop-pen"), 16],
-      [document.querySelector(".prop-specs"), 7],
-    ].filter((p) => p[0]);
-    if (!layers.length) return;
-    /* Promoted here rather than in the stylesheet, so reduced-motion and touch
-       users never hold three composited layers for an effect they cannot get. */
-    for (const [el] of layers) el.style.willChange = "translate";
-
-    let tx = 0, ty = 0, cx = 0, cy = 0, raf = null;
-    const step = () => {
-      cx += (tx - cx) * 0.06;
-      cy += (ty - cy) * 0.06;
-      for (const [el, depth] of layers) {
-        /* style.translate, not style.transform: the pen and the glasses carry
-           a CSS rotate() from the stylesheet, and writing transform here would
-           wipe it - every prop snapping bolt upright on the first mousemove.
-           The individual property composes with it. */
-        el.style.translate = (cx * depth).toFixed(1) + "px " + (cy * depth).toFixed(1) + "px";
-      }
-      if (Math.abs(tx - cx) + Math.abs(ty - cy) > 0.001) raf = requestAnimationFrame(step);
-      else raf = null;
-    };
-    hero.addEventListener("mousemove", (e) => {
-      const r = hero.getBoundingClientRect();
-      tx = (e.clientX - r.left) / r.width - 0.5;
-      ty = (e.clientY - r.top) / r.height - 0.5;
-      if (!raf) raf = requestAnimationFrame(step);
-    });
-    hero.addEventListener("mouseleave", () => {
-      tx = 0; ty = 0;
-      if (!raf) raf = requestAnimationFrame(step);
-    });
-  }
-
   /* ---------------------------------- mount --------------------------------- */
 
   let built = false;
@@ -328,7 +284,6 @@
       wirePreview();
       guardPhotos();
       heroDemo();
-      heroParallax();
     }
     watchReveals(document.getElementById("view-landing"));
   }
