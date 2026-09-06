@@ -322,7 +322,7 @@
           agreement: wide && wide.ok ? "unread" : "single",
           flagged: c.borderline,
           flagReason: c.borderline
-            ? "The close reader landed close to a band boundary here, so this one is a judgment call."
+            ? "The close reader landed close to a band boundary here, so this one is a judgment call — the kind a second reader exists to settle. Turn one on and the two never get averaged."
             : null,
           wide: null,
         });

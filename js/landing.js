@@ -44,7 +44,7 @@
       vis: 'Critics say a ban <mark class="m2">treats students</mark> like children',
       cat: "The second reader",
       n: "03",
-      body: "A different model, reading the same essay against the same list.",
+      body: "A different model — Chrome's built-in Gemini Nano, on your computer — reading the same essay against the same list.",
     },
     {
       vis: 'One says <mark>found it</mark>, one says <mark class="m3">half there</mark>',
@@ -72,6 +72,7 @@
     ["Why two readers?", "Because one reader on its own is a guess with a confident voice. Two readers that work in completely different ways agree on the easy things and split on the hard ones. The split is the useful bit: it points at the one item worth your next five minutes."],
     ["Does my students' writing get sent anywhere?", "Only if you choose it. Out of the box everything runs in the page and nothing leaves the browser — the second reader uses Chrome's own on-device model when your browser has it. Adding a Gemini key in Settings is the only thing that sends an essay to a server, and the app always shows which readers ran."],
     ["Is this trying to replace teachers?", "It is trying to replace the third read-through. The one at nine at night, on essay 78 of 140, where you already know the mark and you are just hunting for the line that proves it. The judgement was never the slow part."],
+    ["Can a student use it?", "Yes — there is a whole mode for them. Switch the reader to Student and every band, judgement and feedback sheet stops rendering; none of it is even computed. In its place a margin tutor asks one question at a time about the student's own sentences — what a hedge is doing there, who “studies show” actually is. It teaches. It does not assess, and it cannot be made to."],
     ["Can I use my own list?", "Yes, and that is the point. Press \u201cPaste your own\u201d in the reader, put one item per line as Name :: what you are looking for, drop in the essay, and it reads against yours. Essay lists, lab lists, or the one you happen to be holding right now."],
   ];
 

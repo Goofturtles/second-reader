@@ -23,6 +23,8 @@
       titleHint: "Untitled essay",
       docHint: "Start writing, or paste the essay here\u2026",
       copyA: "Write the feedback",
+      read: "Read it",
+      readAgain: "Read it again",
     },
     student: {
       list: "What it should do",
@@ -33,6 +35,11 @@
       titleHint: "Untitled essay",
       docHint: "Start writing, or paste your essay here\u2026",
       copyA: "Write the feedback",
+      /* The margin's empty state says "press Ask me something", so the button
+         had better be the one saying it. "Read it" is the marking verb, and a
+         student's press does not mark. */
+      read: "Ask me something",
+      readAgain: "Ask me again",
     },
   };
   function roleCopy() {
@@ -276,7 +283,11 @@
 
   function loadExample() {
     const r = RUBRICS[0];
-    const w = WORKS.find((x) => x.rubricId === r.id);
+    /* The thin essay, deliberately: the strong one reads four-for-four with
+       nothing flagged, so the first read a visitor ever sees would show none
+       of the vocabulary - no gaps, no "check this one". Essay B shows all of
+       it, deterministically. */
+    const w = WORKS.find((x) => x.id === "phones-thin");
     state.rubric = { id: "own-rubric", name: r.name, context: r.context,
       criteria: r.criteria.map((c) => ({ id: c.id, name: c.name, descriptor: c.descriptor, lookFor: c.lookFor })) };
     state.work = { id: "own-work", rubricId: "own-rubric", label: w.label, title: w.title, meta: w.meta, text: w.text };
@@ -418,9 +429,10 @@
     const btn = document.getElementById("btn-read");
     if (!btn) return;
     btn.disabled = state.reading;
+    const copy = roleCopy();
     btn.innerHTML = state.reading
       ? '<i class="spin"></i> Reading'
-      : state.stale ? "Read it again" : "Read it";
+      : state.stale ? copy.readAgain : copy.read;
     /* Lit only when pressing it would do something new. A primary button that
        is always lit stops meaning anything. */
     btn.classList.toggle("is-ready", !state.reading && ready() && (!state.result || state.stale));
@@ -1150,7 +1162,22 @@
           (seg.flag ? '<li><i class="d-flag"></i>Check this one</li>' : "") +
           (seg.missing ? '<li><i class="d-none"></i>Not there</li>' : "") +
         "</ul>" +
+        /* Name the reader(s) on the result itself. The two-reader design is
+           the whole idea, and until now it lived in a pill tooltip and a
+           folded FAQ - invisible at the one moment a first visitor is
+           actually looking at a result. */
+        (state.result.readers && state.result.readers.wide
+          ? '<p class="summary-readers">Read twice — by the close reader in this page and by the second reader — and where they disagreed, it is marked above.</p>'
+          : '<p class="summary-readers">Read by the close reader — deterministic, in this page, same answer every time. ' +
+            /* While a second reader is mid-read or mid-download this same
+               band is on screen, and inviting Settings at that moment is an
+               instruction to interrupt it. */
+            (state.second && (state.second.state === "working" || state.second.state === "warming")
+              ? 'A second reader is on its way — where the two disagree it never averages.</p>'
+              : '<button type="button" class="inline-quiet" data-open-settings>Add a second reader</button> and where the two disagree it never averages — it hands that criterion back to you.</p>')) +
       "</div>";
+    const openBtn = host.querySelector("[data-open-settings]");
+    if (openBtn) openBtn.addEventListener("click", openSettings);
   }
 
   function selectedCriterion() {
@@ -1617,7 +1644,11 @@
     paintChips();
     if (ok) {
       toast("The second reader is ready, on your device.");
-      runRead();
+      /* Only re-read work that can actually be read. A warm that finished
+         over a blank desk used to call runRead() anyway, which scolded the
+         visitor ("Add at least one thing to look for."), grew a phantom
+         criterion row and stole focus - for something the app did to itself. */
+      if (ready()) runRead();
     }
   }
 
@@ -1963,7 +1994,7 @@
     if (demoRunning) return stopDemo();
 
     const r = RUBRICS[0];
-    const w = WORKS.find((x) => x.rubricId === r.id);
+    const w = WORKS.find((x) => x.id === "phones-thin");
 
     if (reduced()) { loadExample(); paintRail(); render(); return runRead(); }
 
@@ -3105,7 +3136,14 @@
     if (!state.tutor) {
       log.innerHTML = '<div class="empty"><h3>Put your essay in, then press Ask me something.</h3>' +
         "<p>I will ask you about one sentence at a time. I will not tell you how you did, " +
-        "because I do not work that out \u2014 nothing here is marked.</p></div>";
+        "because I do not work that out \u2014 nothing here is marked.</p>" +
+        '<div class="empty-do">' +
+          '<button type="button" data-start="example"><svg aria-hidden="true"><use href="#i-play"/></svg>' +
+            "Watch it run on an example</button>" +
+        "</div></div>";
+      log.querySelectorAll("[data-start]").forEach((b) =>
+        b.addEventListener("click", () => startAction(b.getAttribute("data-start")))
+      );
       if (chips) chips.innerHTML = "";
       return;
     }
@@ -4131,7 +4169,22 @@
 
       paintRail();
       paintShelfBadge();
-      if (docText()) runRead(); else render();
+      /* state.tab boots as "evidence", which a student does not have. setTab
+         owns the role fallback (first tool this role gets), so run the boot
+         value through it rather than trusting it. */
+      setTab(state.tab);
+      /* A direct visit should never land on a blank desk: the landing CTA and
+         the README both promise a read already on screen. First visit gets
+         the sample (and the auto-read below); a return visit reopens the
+         newest shelf entry, which re-reads itself. The hero iframe still
+         opts in explicitly with ?example=1, and an embedded page never
+         touches the visitor's shelf or sample state uninvited. */
+      if (global.self === global.top && !docText()) {
+        const latest = Shelf.list()[0];
+        if (latest) openEntry(latest.id);
+        else { loadExample(); paintRail(); }
+      }
+      if (ready()) runRead(); else render();
       warmDevice();
     } else {
       render();
