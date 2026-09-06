@@ -146,7 +146,6 @@
     }
     paintRoleSwap();
     paintRoleCopy();
-    paintRoleSwap();
     paintRail();
     setTab(state.tab);
     /* Signals and Feedback both change SHAPE with the role - a sub-tab appears

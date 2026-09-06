@@ -31,37 +31,31 @@
     {
       vis: 'Backs up claims with <mark>something real</mark>',
       cat: "Your list",
-      n: "01",
       body: "Written the way you would say it out loud.",
     },
     {
       vis: 'A 2016 study found <mark>scores rose 6.4%</mark>',
       cat: "The close reader",
-      n: "02",
       body: "Runs on your computer. No internet, same answer every time.",
     },
     {
       vis: 'Critics say a ban <mark class="m2">treats students</mark> like children',
       cat: "The second reader",
-      n: "03",
       body: "A different model — Chrome's built-in Gemini Nano, on your computer — reading the same essay against the same list.",
     },
     {
       vis: 'One says <mark>found it</mark>, one says <mark class="m3">half there</mark>',
       cat: "When they disagree",
-      n: "04",
       body: "It says so, and hands that one back to you.",
     },
     {
       vis: '&ldquo;<mark>So the ban should stay.</mark>&rdquo;',
       cat: "The proof",
-      n: "05",
       body: "Nothing is claimed without a line of the essay attached.",
     },
     {
       vis: 'Next time: <mark class="m2">cut the hedges</mark>',
       cat: "Handing it back",
-      n: "06",
       body: "Feedback for the student, a summary for you. Neither has a mark.",
     },
   ];

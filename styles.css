@@ -872,59 +872,6 @@ textarea.input { min-height: 150px; resize: vertical; line-height: 1.65; }
 }
 .tag-solid { border: 0; background: var(--ink); color: var(--bg); }
 
-/* --- three steps: a numeral, two or three words, and a picture ----------- */
-.steps { display: grid; gap: 18px; grid-template-columns: repeat(3, 1fr); }
-.step { padding: 26px 24px 24px; border-radius: 20px; border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow-card); }
-.step-n {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px; letter-spacing: 0.16em; color: var(--accent-text); line-height: 1.6;
-}
-.step h3 { margin-top: 8px; font-size: 24px; }
-.step-vis {
-  margin-top: 20px; padding: 18px; border-radius: 13px; background: var(--panel-2);
-  display: grid; gap: 9px; min-height: 108px; align-content: center;
-}
-.vis-row { font-size: 12.5px; line-height: 1.55; color: var(--ink); }
-.vis-row b { font-weight: 600; }
-.vis-dim { color: var(--ink-3); }
-.vis-mark {
-  font-family: var(--font-serif); font-size: 13.5px;
-  background: var(--hl-ok); box-shadow: inset 0 -2px 0 var(--ok);
-  border-radius: 3px; padding: 2px 4px; align-self: start;
-}
-.step-vis .chip { font-style: normal; }
-.vis-line { display: block; height: 7px; border-radius: 999px; background: var(--line-strong); opacity: 0.45; }
-.vis-line.short { width: 52%; }
-.vis-line.mid { width: 74%; }
-
-/* --- the reframe (Ploy: two-column table of claim-over-explanation; the
-       column headers are V7's radio dots, the left one greyed) ------------- */
-
-
-.reframe {
-  margin-top: 44px;
-  border: 1px solid var(--line); border-radius: 20px;
-  background: var(--panel); overflow: hidden; box-shadow: var(--shadow-card);
-}
-.reframe-cols, .reframe-row { display: grid; grid-template-columns: 1fr 1fr; }
-.reframe-cols { background: var(--panel-2); border-bottom: 1px solid var(--line); }
-.reframe-col {
-  padding: 15px 24px; font-size: 12.5px; font-weight: 600; line-height: 1.5;
-  display: flex; align-items: center; gap: 9px;
-}
-.reframe-col-a { color: var(--ink-3); }
-.reframe-col-b { color: var(--ink); border-left: 1px solid var(--line); }
-.rdot {
-  width: 11px; height: 11px; border-radius: 50%; flex: none;
-  border: 1.5px solid currentColor; opacity: 0.55;
-}
-.rdot.on { opacity: 1; border-color: var(--accent); box-shadow: inset 0 0 0 2.5px var(--accent); }
-
-.reframe-row + .reframe-row { border-top: 1px solid var(--line); }
-.reframe-row > div { padding: 20px 24px; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
-.reframe-row > div + div { color: var(--ink); font-weight: 600; }
-.reframe-row > div + div { border-left: 1px solid var(--line); }
-
 /* --- inside / six parts (Browserbase: a typographic mockup on a faint grid,
        then an uppercase category, a body, and a pill link) ----------------- */
 .parts { margin-top: 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -958,12 +905,6 @@ textarea.input { min-height: 150px; resize: vertical; line-height: 1.65; }
   color: var(--ink-3); line-height: 1.6;
 }
 .part-body p { margin-top: 10px; font-size: 13.5px; line-height: 1.7; color: var(--ink-2); flex: 1; }
-.part-n {
-  margin-top: 16px; align-self: flex-start;
-  padding: 6px 13px; border-radius: 999px;
-  background: var(--cta-bg); color: var(--cta-ink);
-  font-size: 11.5px; font-weight: 600; line-height: 1.5;
-}
 
 /* --- on-device band (Attio: two-tone heading, body, then a row of small
        assurance badges) --------------------------------------------------- */
@@ -1015,7 +956,7 @@ details.faq[open] p { animation: rise 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) bot
 /* --- footer (Linear: quiet columns, wordmark alone, hairline fine print) -- */
 .foot-grid { display: grid; gap: 40px; grid-template-columns: 2fr repeat(3, 1fr); padding: 64px 0 0; }
 .foot-about p { margin-top: 14px; max-width: 30ch; font-size: 13px; line-height: 1.7; color: var(--ink-3); }
-.foot-col h4 { font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6; }
+.foot-col h3 { font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); line-height: 1.6; }
 .foot-col ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .foot-col a, .foot-col button {
   font-size: 13.5px; color: var(--ink-2); text-decoration: none; background: none; border: 0;
@@ -1030,25 +971,13 @@ details.faq[open] p { animation: rise 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) bot
 
 /* ------------------------------- responsive ------------------------------ */
 @media (max-width: 980px) {
-  .steps, .parts { grid-template-columns: 1fr 1fr; }
+  .parts { grid-template-columns: 1fr 1fr; }
   .stats { grid-template-columns: 1fr 1fr; }
   .foot-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 720px) {
-  .steps, .parts, .people { grid-template-columns: 1fr; }
+  .parts, .people { grid-template-columns: 1fr; }
   .foot-grid { grid-template-columns: 1fr; gap: 30px; }
-  /* the comparison stacks: each row becomes two stacked halves, and the
-     column headers move onto the halves themselves */
-  .reframe-cols { display: none; }
-  .reframe-row { grid-template-columns: 1fr; }
-  .reframe-row > div + div { border-left: 0; border-top: 1px solid var(--line); }
-  .reframe-row > div:first-child::before { content: "Tonight"; }
-  .reframe-row > div:last-child::before { content: "With this"; color: var(--accent-text); }
-  .reframe-row > div::before {
-    display: block; margin-bottom: 8px;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--ink-3); line-height: 1.6;
-  }
   .define { padding: 68px 20px 74px; }
   details.faq p { padding-right: 4px; }
 }
@@ -1425,10 +1354,8 @@ mark.ev.pulse { animation: markPulse 1.1s ease; }
 
 /* Cards need the hairline to read at all; the shadow does nothing here. */
 :root[data-theme="dark"] .card,
-:root[data-theme="dark"] .step,
 :root[data-theme="dark"] .finding,
 :root[data-theme="dark"] .gc,
-:root[data-theme="dark"] .reframe,
 :root[data-theme="dark"] .preview-card { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05); }
 
 /* Light text on a dark ground optically gains weight. Easing the tracking back
