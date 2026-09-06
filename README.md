@@ -8,8 +8,8 @@ that would move it up a band. Every judgment is anchored to a quoted span you ca
 click. It never outputs a mark, because the mark is the teacher's call and the
 evidence is what the teacher is actually short of.
 
-Built for the [Prometheus August AI Challenge](https://august-ai-challenge-31059.devpost.com/)
-(deadline 29 Aug 2026).
+Built for Prometheus's [SPEED September AI Challenge](https://prometheus-sept-ai-classic.devpost.com/)
+(deadline 20 Sept 2026).
 
 ## Try it
 
